@@ -52,23 +52,23 @@ export class Assignment3 extends Scene {
         const t = program_state.animation_time / 1000, dt = program_state.animation_delta_time / 1000;
         
         const arc_radius = 10;
-        const max_angle =  Math.PI * 4/7;  
+        const max_angle =  Math.PI * 2/7;  
         const sway_period = 8; 
          
         const angular_frequency = 2 * Math.PI / sway_period; 
-        const sun_angle = max_angle/2 * (Math.sin(angular_frequency * t));
+        const sun_angle = max_angle * (Math.sin(angular_frequency * t));
         const sun_x = arc_radius * Math.sin(sun_angle);
         const sun_y = arc_radius * Math.cos(sun_angle);
         const sun_z = 5;
 
-        var color_scale = (1+Math.sin(2 * Math.PI / 10 * t))/2;
+        var color_scale = sun_x / (arc_radius*Math.sin(max_angle)) + 1; 
+        const sun_color = color(1, 1 - color_scale, 1 - color_scale, 1); 
         let sun_transform = Mat4.identity();
         sun_transform = sun_transform.times(Mat4.translation(sun_x, sun_y, sun_z));
-        var color_state = color(1, color_scale, color_scale, 1);
-        this.shapes.sun.draw(context, program_state, sun_transform, this.materials.sun.override({color: color_state}));
+        this.shapes.sun.draw(context, program_state, sun_transform, this.materials.sun.override({color: sun_color}));
         
         const light_position = vec4(sun_x, sun_y, sun_z, 1);
-        program_state.lights = [new Light(light_position, color_state, 100)];
+        program_state.lights = [new Light(light_position, sun_color, 100)];
 
         // Head
         let model_transform = Mat4.identity()
