@@ -15,15 +15,22 @@ export class Assignment3 extends Scene {
             human_torso: new defs.Cube(),
             human_arm: new defs.Capped_Cylinder(4,12),
             human_leg: new defs.Capped_Cylinder(4,12),
+            ball: new defs.Subdivision_Sphere(4),
             sun: new defs.Subdivision_Sphere(4),
+            moon: new defs.Subdivision_Sphere(4),
         };
 
         // *** Materials
         this.materials = {
             human: new Material(new defs.Phong_Shader(),
                         {ambient: 0.5, diffusivity: 0.5, specularity:1, color: hex_color("#FFFFFF")}),
+            ball: new Material(new defs.Phong_Shader(),
+                        {ambient: 0.5, diffusivity: 0.5, specularity:1, color: hex_color("#654321")}),
+            sun: new Material(new defs.Phong_Shader(),
+                        {ambient: 0.5, diffusivity: 0.5, specularity:1, color: hex_color("#FFFF00")}),
+            moon: new Material(new defs.Phong_Shader(),
+                        {ambient: 0.5, diffusivity: 0.5, specularity:1, color: hex_color("#888888")}),
         }
-
         this.initial_camera_location = Mat4.look_at(vec3(0, 10, 20), vec3(0, 0, 0), vec3(0, 1, 0));
     }
 
@@ -33,7 +40,7 @@ export class Assignment3 extends Scene {
     display(context, program_state) {
         // display():  Called once per frame of animation.
         // Setup -- This part sets up the scene's overall camera matrix, projection matrix, and lights:
-        if (!context.scratchpad.controls) {
+         if (!context.scratchpad.controls) {
             this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
             // Define the global camera and projection matrices, which are stored in program_state.
             program_state.set_camera(this.initial_camera_location);
@@ -42,7 +49,26 @@ export class Assignment3 extends Scene {
         program_state.projection_transform = Mat4.perspective(
             Math.PI / 4, context.width / context.height, .1, 1000);
 
-       const t = program_state.animation_time / 1000;
+        const t = program_state.animation_time / 1000, dt = program_state.animation_delta_time / 1000;
+        
+        const arc_radius = 10;
+        const max_angle =  Math.PI * 4/7;  
+        const sway_period = 8; 
+         
+        const angular_frequency = 2 * Math.PI / sway_period; 
+        const sun_angle = max_angle/2 * (Math.sin(angular_frequency * t));
+        const sun_x = arc_radius * Math.sin(sun_angle);
+        const sun_y = arc_radius * Math.cos(sun_angle);
+        const sun_z = 5;
+
+        var color_scale = (1+Math.sin(2 * Math.PI / 10 * t))/2;
+        let sun_transform = Mat4.identity();
+        sun_transform = sun_transform.times(Mat4.translation(sun_x, sun_y, sun_z));
+        var color_state = color(1, color_scale, color_scale, 1);
+        this.shapes.sun.draw(context, program_state, sun_transform, this.materials.sun.override({color: color_state}));
+        
+        const light_position = vec4(sun_x, sun_y, sun_z, 1);
+        program_state.lights = [new Light(light_position, color_state, 100)];
 
         // Head
         let model_transform = Mat4.identity()
@@ -81,6 +107,13 @@ export class Assignment3 extends Scene {
             .times(Mat4.translation(0.5, -1, 0))
             .times(Mat4.scale(0.25, 0.75, 0.25));
         this.shapes.human_leg.draw(context, program_state, model_transform, this.materials.human);
+
+        // Ball
+        model_transform = Mat4.identity()
+            .times(Mat4.translation(1.5, 3, 0))
+            .times(Mat4.translation(0.8, 0.6, 0)) 
+            .times(Mat4.scale(2, 2, 2));  
+        this.shapes.ball.draw(context, program_state, model_transform, this.materials.ball);
     }
 }
 
