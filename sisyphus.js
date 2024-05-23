@@ -15,7 +15,25 @@ const {
     Shape,
     Material,
     Scene,
+    Texture,
 } = tiny;
+
+class TexturedQuad extends Shape {
+    constructor() {
+        super("position", "normal", "texture_coord");
+        this.arrays.position = Vector3.cast(
+            [-1, -1, 0], [1, -1, 0], [-1, 1, 0], [1, 1, 0]
+        );
+        this.arrays.normal = Vector3.cast(
+            [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1]
+        );
+        this.arrays.texture_coord = Vector.cast(
+            [0, 0], [1, 0], [0, 1], [1, 1]
+        );
+        this.indices = [0, 1, 2, 1, 3, 2];
+    }
+}
+
 
 const Pyramid = (defs.Pyramid = class Pyramid extends Shape {
     // **Pyramid** demonstrates flat vs smooth shading (a boolean argument selects
@@ -266,6 +284,7 @@ export class Sisyphus extends Scene {
             moon: new defs.Subdivision_Sphere(4),
             mountain: new Pyramid(false),
             sisyphus: new Person(),
+            // background: new TexturedQuad(),
         };
 
         // *** Materials
@@ -301,6 +320,13 @@ export class Sisyphus extends Scene {
                 specularity: 1,
                 color: hex_color("#964B00"),
             }),
+
+            // background: new Material(new defs.Textured_Phong(1), { 
+            //     ambient: 1, 
+            //     diffusivity: 0, 
+            //     specularity: 0, 
+            //     texture: new Texture("assets/bg.jpg"), 
+            // }),
         };
         this.initial_camera_location = Mat4.look_at(
             vec3(0, 10, 20),
@@ -312,6 +338,9 @@ export class Sisyphus extends Scene {
     make_control_panel() {}
 
     display(context, program_state) {
+        // background
+        context.context.clearColor(1, 1, 1, 1); 
+        context.context.clear(context.context.COLOR_BUFFER_BIT | context.context.DEPTH_BUFFER_BIT);
         // display():  Called once per frame of animation.
         // Setup -- This part sets up the scene's overall camera matrix, projection matrix, and lights:
         if (!context.scratchpad.controls) {
@@ -330,8 +359,14 @@ export class Sisyphus extends Scene {
         );
 
         const t = program_state.animation_time / 1000,
-            dt = program_state.animation_delta_time / 1000;
+        dt = program_state.animation_delta_time / 1000;
 
+        // background
+        // const background_transform = Mat4.identity()
+        //     .times(Mat4.scale(context.width / context.height, 1, 1));
+        // this.shapes.background.draw(context, program_state, background_transform, this.materials.background);
+
+        // sun
         const arc_radius = 10;
         const max_angle = (Math.PI * 2) / 7;
         const sway_period = 8;
@@ -358,6 +393,7 @@ export class Sisyphus extends Scene {
         const light_position = vec4(sun_x, sun_y, sun_z, 1);
         program_state.lights = [new Light(light_position, sun_color, 100)];
 
+        // mountain and character
         let model_transform = Mat4.identity();
 
         let mountain_transform = model_transform;
