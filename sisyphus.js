@@ -196,17 +196,23 @@ const Person = (defs.Person = class Person extends Shape {
             //     [0, 2],
             //     [0, 1],
             // ]);
-            (this.ball = new defs.Subdivision_Sphere(4));
+            (this.ball = new defs.Subdivision_Sphere(2));
     }
 
     draw(context, program_state, model_transform, material) {
         // Draw the torso
+        const t = program_state.animation_time / 1000;
+
+        let ball_speed =
+            Math.PI / 2 + (Math.PI / 2) * Math.sin((1 / 4) * Math.PI * t);
+
         let torso_transform = model_transform.times(Mat4.scale(1, 2, 0.5));
         this.torso.draw(context, program_state, torso_transform, material);
 
         // Draw the ball
         let ball_transform = model_transform
             .times(Mat4.translation(0, 6, -1.5))
+            .times(Mat4.rotation(-1 * ball_speed, 1, 0, 0))
             .times(Mat4.scale(3, 3, 3));
         this.ball.draw(context, program_state, ball_transform, material);
 
@@ -244,7 +250,7 @@ const Person = (defs.Person = class Person extends Shape {
     }
 });
 
-export class Assignment3 extends Scene {
+export class Sisyphus extends Scene {
     constructor() {
         // constructor(): Scenes begin by populating initial values like the Shapes and Materials they'll need.
         super();
@@ -293,7 +299,7 @@ export class Assignment3 extends Scene {
                 ambient: 0.5,
                 diffusivity: 0.5,
                 specularity: 1,
-                color: hex_color("#0000FF"),
+                color: hex_color("#964B00"),
             }),
         };
         this.initial_camera_location = Mat4.look_at(
@@ -372,7 +378,8 @@ export class Assignment3 extends Scene {
         let sisyphus_ball_transform = model_transform;
 
         let sisyphus_speed =
-            mountain_scale / 2 + (mountain_scale / 2) * Math.sin(t);
+            (mountain_scale - 1) / 2 +
+            ((mountain_scale - 1) / 2) * Math.sin((1 / 4) * Math.PI * t);
 
         sisyphus_ball_transform = sisyphus_ball_transform
             .times(Mat4.translation(0, -1 * mountain_scale, mountain_scale + 1))
