@@ -182,21 +182,47 @@ const Person = (defs.Person = class Person extends Shape {
     constructor() {
         super("position", "normal", "texture_coord");
 
-        // Define the body parts
-        this.torso = new defs.Cube();
-        this.head = new defs.Cube();
+        this.shapes = {
+            torso: new defs.Cube(),
+            head: new defs.Cube(),
 
-        (this.arm = new defs.Capped_Cylinder(4, 12)),
-            (this.leg = new defs.Capped_Cylinder(4, 12)),
-            // this.arm = new defs.Cylindrical_Tube(10, 10, [
-            //     [0, 2],
-            //     [0, 1],
-            // ]);
-            // this.leg = new defs.Cylindrical_Tube(10, 10, [
-            //     [0, 2],
-            //     [0, 1],
-            // ]);
-            (this.ball = new defs.Subdivision_Sphere(2));
+            arm: new defs.Cube(),
+            leg: new defs.Cube(),
+            ball: new defs.Subdivision_Sphere(3),
+        };
+
+        this.materials = {
+            head: new Material(new defs.Phong_Shader(), {
+                ambient: 0.5,
+                diffusivity: 0.5,
+                specularity: 1,
+                color: hex_color("#fdf5e2"),
+            }),
+            torso: new Material(new defs.Phong_Shader(), {
+                ambient: 0.5,
+                diffusivity: 0.5,
+                specularity: 1,
+                color: hex_color("#654321"),
+            }),
+            arm: new Material(new defs.Phong_Shader(), {
+                ambient: 0.5,
+                diffusivity: 0.5,
+                specularity: 1,
+                color: hex_color("#fdf5e2"),
+            }),
+            leg: new Material(new defs.Phong_Shader(), {
+                ambient: 0.5,
+                diffusivity: 0.5,
+                specularity: 1,
+                color: hex_color("#fdf5e2"),
+            }),
+            ball: new Material(new defs.Phong_Shader(), {
+                ambient: 0.5,
+                diffusivity: 0.5,
+                specularity: 1,
+                color: hex_color("#808080"),
+            }),
+        };
     }
 
     draw(context, program_state, model_transform, material) {
@@ -207,46 +233,84 @@ const Person = (defs.Person = class Person extends Shape {
             Math.PI / 2 + (Math.PI / 2) * Math.sin((1 / 4) * Math.PI * t);
 
         let torso_transform = model_transform.times(Mat4.scale(1, 2, 0.5));
-        this.torso.draw(context, program_state, torso_transform, material);
+        this.shapes.torso.draw(
+            context,
+            program_state,
+            torso_transform,
+            this.materials.torso
+        );
 
         // Draw the ball
         let ball_transform = model_transform
             .times(Mat4.translation(0, 6, -1.5))
             .times(Mat4.rotation(-1 * ball_speed, 1, 0, 0))
             .times(Mat4.scale(3, 3, 3));
-        this.ball.draw(context, program_state, ball_transform, material);
+        this.shapes.ball.draw(
+            context,
+            program_state,
+            ball_transform,
+            this.materials.ball
+        );
 
         // Draw the head
         let head_transform = model_transform
             .times(Mat4.translation(0, 3, 0))
             .times(Mat4.scale(0.5, 0.5, 0.5));
-        this.head.draw(context, program_state, head_transform, material);
+        this.shapes.head.draw(
+            context,
+            program_state,
+            head_transform,
+            this.materials.head
+        );
 
         // Draw the left arm
         let left_arm_transform = model_transform
-            .times(Mat4.translation(-1.5, 3, 0))
+            .times(Mat4.translation(-2, 3, 0))
             .times(Mat4.rotation(Math.PI / 5, 0, 0, 1))
-            .times(Mat4.scale(0.2, 2, 0.2));
-        this.arm.draw(context, program_state, left_arm_transform, material);
+            .times(Mat4.scale(0.5, 2, 0.5));
+        this.shapes.arm.draw(
+            context,
+            program_state,
+            left_arm_transform,
+            this.materials.arm
+        );
 
         // Draw the right arm
         let right_arm_transform = model_transform
-            .times(Mat4.translation(1.5, 3, 0))
+            .times(Mat4.translation(2, 3, 0))
             .times(Mat4.rotation((-1 * Math.PI) / 5, 0, 0, 1))
-            .times(Mat4.scale(0.2, 2, 0.2));
-        this.arm.draw(context, program_state, right_arm_transform, material);
+            .times(Mat4.scale(0.5, 2, 0.5));
+        this.shapes.arm.draw(
+            context,
+            program_state,
+            right_arm_transform,
+            this.materials.arm
+        );
 
+        let walking = (Math.PI / 5) * Math.sin(2 * Math.PI * t);
         // Draw the left leg
         let left_leg_transform = model_transform
-            .times(Mat4.translation(-0.5, -2.5, 0))
-            .times(Mat4.scale(0.2, 1, 0.2));
-        this.leg.draw(context, program_state, left_leg_transform, material);
+            .times(Mat4.translation(-0.5, -3, 0))
+            .times(Mat4.rotation(walking, 1, 0, 0))
+            .times(Mat4.scale(0.5, 1, 0.5));
+        this.shapes.leg.draw(
+            context,
+            program_state,
+            left_leg_transform,
+            this.materials.leg
+        );
 
         // Draw the right leg
         let right_leg_transform = model_transform
-            .times(Mat4.translation(0.5, -2.5, 0))
-            .times(Mat4.scale(0.2, 1, 0.2));
-        this.leg.draw(context, program_state, right_leg_transform, material);
+            .times(Mat4.translation(0.5, -3, 0))
+            .times(Mat4.rotation(-1 * walking, 1, 0, 0))
+            .times(Mat4.scale(0.5, 1, 0.5));
+        this.shapes.leg.draw(
+            context,
+            program_state,
+            right_leg_transform,
+            this.materials.leg
+        );
     }
 });
 
@@ -307,9 +371,63 @@ export class Sisyphus extends Scene {
             vec3(0, 0, 0),
             vec3(0, 1, 0)
         );
+
+        this.sisyphus_transform = Mat4.identity();
     }
 
-    make_control_panel() {}
+    rotate_left() {
+        this.sisyphus_transform = this.sisyphus_transform.times(
+            Mat4.rotation(0.2, 0, 1, 0)
+        );
+    }
+
+    rotate_right() {
+        this.sisyphus_transform = this.sisyphus_transform.times(
+            Mat4.rotation(-0.2, 0, 1, 0)
+        );
+    }
+
+    move_left() {
+        this.sisyphus_transform = this.sisyphus_transform.times(
+            Mat4.translation(-0.2, 0, 0)
+        );
+    }
+
+    move_right() {
+        this.sisyphus_transform = this.sisyphus_transform.times(
+            Mat4.translation(0.2, 0, 0)
+        );
+    }
+
+    make_control_panel() {
+        this.key_triggered_button(
+            "Initial Camera View",
+            ["Control", "0"],
+            () => (this.attached = () => this.initial_camera_location)
+        );
+
+        this.key_triggered_button(
+            "Attach to sisyphus",
+            ["Control", "1"],
+            () => (this.attached = () => this.sisyphus)
+        );
+
+        this.key_triggered_button("Left", ["ArrowLeft"], () =>
+            this.move_left()
+        );
+
+        this.key_triggered_button("Right", ["ArrowRight"], () =>
+            this.move_right()
+        );
+
+        this.key_triggered_button("Rotate Left", ["q"], () =>
+            this.rotate_left()
+        );
+
+        this.key_triggered_button("Rotate Right", ["e"], () =>
+            this.rotate_right()
+        );
+    }
 
     display(context, program_state) {
         // display():  Called once per frame of animation.
@@ -360,38 +478,56 @@ export class Sisyphus extends Scene {
 
         let model_transform = Mat4.identity();
 
-        let mountain_transform = model_transform;
+        // let mountain_transform = model_transform;
 
-        let mountain_scale = 10;
+        // let mountain_scale = 10;
 
-        mountain_transform = mountain_transform.times(
-            Mat4.scale(mountain_scale, mountain_scale, mountain_scale)
-        );
+        // mountain_transform = mountain_transform.times(
+        //     Mat4.scale(mountain_scale, mountain_scale, mountain_scale)
+        // );
 
-        this.shapes.mountain.draw(
-            context,
-            program_state,
-            mountain_transform,
-            this.materials.mountain
-        );
+        // this.shapes.mountain.draw(
+        //     context,
+        //     program_state,
+        //     mountain_transform,
+        //     this.materials.mountain
+        // );
 
-        let sisyphus_ball_transform = model_transform;
+        // previous code for sisyphus going up mountain
 
-        let sisyphus_speed =
-            (mountain_scale - 1) / 2 +
-            ((mountain_scale - 1) / 2) * Math.sin((1 / 4) * Math.PI * t);
+        // let sisyphus_ball_transform = model_transform;
 
-        sisyphus_ball_transform = sisyphus_ball_transform
-            .times(Mat4.translation(0, -1 * mountain_scale, mountain_scale + 1))
-            .times(Mat4.translation(0, 2 * sisyphus_speed, -1 * sisyphus_speed))
-            .times(Mat4.scale(1 / 2, 1 / 2, 1 / 2));
+        // let sisyphus_speed =
+        //     (mountain_scale - 1) / 2 +
+        //     ((mountain_scale - 1) / 2) * Math.sin((1 / 4) * Math.PI * t);
+
+        // this.sisyphus_transform = this.sisyphus_transform.times(
+        //     Mat4.translation(0, 0, -1 * t)
+        // );
+        // this.sisyphus_transform = this.sisyphus_transform
+        //     .times(Mat4.translation(0, -1 * mountain_scale, mountain_scale + 1))
+        //     .times(Mat4.translation(0, 2 * sisyphus_speed, -1 * sisyphus_speed))
+        //     .times(Mat4.scale(1 / 2, 1 / 2, 1 / 2));
 
         this.shapes.sisyphus.draw(
             context,
             program_state,
-            sisyphus_ball_transform,
+            this.sisyphus_transform,
             this.materials.human
         );
+
+        this.sisyphus = Mat4.inverse(
+            this.sisyphus_transform.times(Mat4.translation(0, 0, 20))
+        );
+
+        if (this.attached != undefined) {
+            let desired = this.attached();
+
+            program_state.camera_inverse = desired;
+            // program_state.camera_inverse = desired.map((x, i) =>
+            //     Vector.from(program_state.camera_inverse[i]).mix(x, 0.1)
+            // );
+        }
     }
 }
 
