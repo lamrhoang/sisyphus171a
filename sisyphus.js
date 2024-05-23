@@ -18,21 +18,21 @@ const {
     Texture,
 } = tiny;
 
-class TexturedQuad extends Shape {
-    constructor() {
-        super("position", "normal", "texture_coord");
-        this.arrays.position = Vector3.cast(
-            [-1, -1, 0], [1, -1, 0], [-1, 1, 0], [1, 1, 0]
-        );
-        this.arrays.normal = Vector3.cast(
-            [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1]
-        );
-        this.arrays.texture_coord = Vector.cast(
-            [0, 0], [1, 0], [0, 1], [1, 1]
-        );
-        this.indices = [0, 1, 2, 1, 3, 2];
-    }
-}
+// class TexturedQuad extends Shape {
+//     constructor() {
+//         super("position", "normal", "texture_coord");
+//         this.arrays.position = Vector3.cast(
+//             [-1, -1, 0], [1, -1, 0], [-1, 1, 0], [1, 1, 0]
+//         );
+//         this.arrays.normal = Vector3.cast(
+//             [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1]
+//         );
+//         this.arrays.texture_coord = Vector.cast(
+//             [0, 0], [1, 0], [0, 1], [1, 1]
+//         );
+//         this.indices = [0, 1, 2, 1, 3, 2];
+//     }
+// }
 
 
 const Pyramid = (defs.Pyramid = class Pyramid extends Shape {
