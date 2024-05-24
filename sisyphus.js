@@ -566,9 +566,9 @@ export class Sisyphus extends Scene {
             context.context.COLOR_BUFFER_BIT | context.context.DEPTH_BUFFER_BIT
         );
 
-        sun_transform = sun_transform.times(
-            Mat4.translation(sun_x, sun_y, sun_z)
-        );
+        sun_transform = sun_transform
+            .times(Mat4.translation(sun_x, sun_y, sun_z))
+            .times(Mat4.scale(5, 5, 5));
         this.shapes.sun.draw(
             context,
             program_state,
