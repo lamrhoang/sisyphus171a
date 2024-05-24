@@ -34,7 +34,6 @@ const {
 //     }
 // }
 
-
 const Pyramid = (defs.Pyramid = class Pyramid extends Shape {
     // **Pyramid** demonstrates flat vs smooth shading (a boolean argument selects
     // which one).  It is a 3D shape with a square base and four triangular faces.
@@ -382,23 +381,61 @@ export class Sisyphus extends Scene {
                 ambient: 0.5,
                 diffusivity: 0.5,
                 specularity: 1,
-                color: hex_color("#964B00"),
+                color: hex_color("#394854"),
             }),
 
-            // background: new Material(new defs.Textured_Phong(1), { 
-            //     ambient: 1, 
-            //     diffusivity: 0, 
-            //     specularity: 0, 
-            //     texture: new Texture("assets/bg.jpg"), 
+            // background: new Material(new defs.Textured_Phong(1), {
+            //     ambient: 1,
+            //     diffusivity: 0,
+            //     specularity: 0,
+            //     texture: new Texture("assets/bg.jpg"),
             // }),
         };
+
+        this.sisyphus_transform = Mat4.identity();
+
+        let model_transform = Mat4.identity();
+
+        this.mountain_transform = model_transform;
+
+        this.mountain_scale = 25;
+
+        this.mountain_transform = this.mountain_transform.times(
+            Mat4.scale(
+                this.mountain_scale,
+                this.mountain_scale,
+                this.mountain_scale
+            )
+        );
+
+        // const up = vec3(0, 1, 0);
+        // const mountain_normal = this.shapes.mountain.arrays.normal[4];
+        // const rotation_axis = up.cross(mountain_normal).normalized();
+        // const rotation_angle = Math.acos(up.dot(mountain_normal));
+
+        this.sisyphus_transform = this.sisyphus_transform.times(
+            Mat4.translation(
+                0,
+                -1 * this.mountain_scale + 2,
+                this.mountain_scale + 2
+            )
+        );
+        // .times(Mat4.rotation((-1 * Math.PI) / 7, 1, 0, 0));
+        //     .times(
+        //         Mat4.rotation(
+        //             rotation_angle,
+        //             rotation_axis[0],
+        //             rotation_axis[1],
+        //             rotation_axis[2]
+        //         )
+        //     );
+
+        this.top = false;
         this.initial_camera_location = Mat4.look_at(
-            vec3(0, 10, 20),
+            vec3(0, 10, 4 * this.mountain_scale),
             vec3(0, 0, 0),
             vec3(0, 1, 0)
         );
-
-        this.sisyphus_transform = Mat4.identity();
     }
 
     rotate_left() {
@@ -455,10 +492,20 @@ export class Sisyphus extends Scene {
         );
     }
 
+    interpolateColor(color1, color2, scale) {
+        return vec4(
+            color1[0] * (1 - scale) + color2[0] * scale,
+            color1[1] * (1 - scale) + color2[1] * scale,
+            color1[2] * (1 - scale) + color2[2] * scale,
+            color1[3] * (1 - scale) + color2[3] * scale
+        );
+    }
+
     display(context, program_state) {
-        // background
-        context.context.clearColor(1, 1, 1, 1); 
-        context.context.clear(context.context.COLOR_BUFFER_BIT | context.context.DEPTH_BUFFER_BIT);
+        // context.context.clearColor(1, 1, 1, 1);
+        // context.context.clear(
+        //     context.context.COLOR_BUFFER_BIT | context.context.DEPTH_BUFFER_BIT
+        // );
         // display():  Called once per frame of animation.
         // Setup -- This part sets up the scene's overall camera matrix, projection matrix, and lights:
         if (!context.scratchpad.controls) {
@@ -477,7 +524,7 @@ export class Sisyphus extends Scene {
         );
 
         const t = program_state.animation_time / 1000,
-        dt = program_state.animation_delta_time / 1000;
+            dt = program_state.animation_delta_time / 1000;
 
         // background
         // const background_transform = Mat4.identity()
@@ -485,7 +532,7 @@ export class Sisyphus extends Scene {
         // this.shapes.background.draw(context, program_state, background_transform, this.materials.background);
 
         // sun
-        const arc_radius = 10;
+        const arc_radius = 2 * this.mountain_scale;
         const max_angle = (Math.PI * 2) / 7;
         const sway_period = 8;
 
@@ -498,6 +545,27 @@ export class Sisyphus extends Scene {
         var color_scale = sun_x / (arc_radius * Math.sin(max_angle)) + 1;
         const sun_color = color(1, 1 - color_scale, 1 - color_scale, 1);
         let sun_transform = Mat4.identity();
+
+        color_scale = Math.max(0, Math.min(1, color_scale));
+        let sky_blue = vec4(0.53, 0.81, 0.92, 1);
+        let black = vec4(0, 0, 0, 1);
+        let background_color = this.interpolateColor(
+            black,
+            sky_blue,
+            color_scale
+        );
+
+        // background;
+        context.context.clearColor(
+            background_color[0],
+            background_color[1],
+            background_color[2],
+            background_color[3]
+        );
+        context.context.clear(
+            context.context.COLOR_BUFFER_BIT | context.context.DEPTH_BUFFER_BIT
+        );
+
         sun_transform = sun_transform.times(
             Mat4.translation(sun_x, sun_y, sun_z)
         );
@@ -512,38 +580,62 @@ export class Sisyphus extends Scene {
         program_state.lights = [new Light(light_position, sun_color, 100)];
 
         // mountain and character
-        let model_transform = Mat4.identity();
 
-        // let mountain_transform = model_transform;
-
-        // let mountain_scale = 10;
-
-        // mountain_transform = mountain_transform.times(
-        //     Mat4.scale(mountain_scale, mountain_scale, mountain_scale)
-        // );
-
-        // this.shapes.mountain.draw(
-        //     context,
-        //     program_state,
-        //     mountain_transform,
-        //     this.materials.mountain
-        // );
+        this.shapes.mountain.draw(
+            context,
+            program_state,
+            this.mountain_transform,
+            this.materials.mountain
+        );
 
         // previous code for sisyphus going up mountain
 
-        // let sisyphus_ball_transform = model_transform;
+        let model_transform = Mat4.identity();
 
-        // let sisyphus_speed =
-        //     (mountain_scale - 1) / 2 +
-        //     ((mountain_scale - 1) / 2) * Math.sin((1 / 4) * Math.PI * t);
+        let mountain_scale = this.mountain_scale;
+
+        let sisyphus_speed =
+            (mountain_scale - 1) / 2 +
+            ((mountain_scale - 1) / 2) * Math.sin((1 / 4) * Math.PI * t);
+
+        if (!this.top) {
+            this.sisyphus_transform = this.sisyphus_transform.times(
+                Mat4.translation(
+                    0,
+                    2 * sisyphus_speed * 0.01,
+                    -1 * sisyphus_speed * 0.01
+                )
+            );
+        } else {
+            this.sisyphus_transform = this.sisyphus_transform.times(
+                Mat4.translation(
+                    0,
+                    ((-2 * (mountain_scale - 1)) / 2) * 0.01,
+                    ((mountain_scale - 1) / 2) * 0.01
+                )
+            );
+        }
+
+        if (this.sisyphus_transform[1][3] > this.mountain_scale) {
+            this.top = true;
+        }
+
+        if (this.sisyphus_transform[1][3] <= this.mountain_scale * -1) {
+            this.top = false;
+        }
+        // if (this.sisyphus_transform[1][3] > this.mountain_scale) {
+        //     this.sisyphus_transform = Mat4.identity().times(
+        //         Mat4.translation(
+        //             0,
+        //             -1 * this.mountain_scale + 2,
+        //             this.mountain_scale + 2
+        //         )
+        //     );
+        // }
 
         // this.sisyphus_transform = this.sisyphus_transform.times(
-        //     Mat4.translation(0, 0, -1 * t)
+        //     Mat4.translation(0, 0, -0.1)
         // );
-        // this.sisyphus_transform = this.sisyphus_transform
-        //     .times(Mat4.translation(0, -1 * mountain_scale, mountain_scale + 1))
-        //     .times(Mat4.translation(0, 2 * sisyphus_speed, -1 * sisyphus_speed))
-        //     .times(Mat4.scale(1 / 2, 1 / 2, 1 / 2));
 
         this.shapes.sisyphus.draw(
             context,
@@ -553,7 +645,9 @@ export class Sisyphus extends Scene {
         );
 
         this.sisyphus = Mat4.inverse(
-            this.sisyphus_transform.times(Mat4.translation(0, 0, 20))
+            this.sisyphus_transform
+                .times(Mat4.rotation(Math.PI / 4, 1, 0, 0))
+                .times(Mat4.translation(0, 0, 20))
         );
 
         if (this.attached != undefined) {
