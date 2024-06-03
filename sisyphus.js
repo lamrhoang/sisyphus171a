@@ -18,182 +18,42 @@ const {
     Texture,
 } = tiny;
 
-// class TexturedQuad extends Shape {
-//     constructor() {
-//         super("position", "normal", "texture_coord");
-//         this.arrays.position = Vector3.cast(
-//             [-1, -1, 0], [1, -1, 0], [-1, 1, 0], [1, 1, 0]
-//         );
-//         this.arrays.normal = Vector3.cast(
-//             [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1]
-//         );
-//         this.arrays.texture_coord = Vector.cast(
-//             [0, 0], [1, 0], [0, 1], [1, 1]
-//         );
-//         this.indices = [0, 1, 2, 1, 3, 2];
-//     }
-// }
+const {Cube, Axis_Arrows, Textured_Phong} = defs;
 
-const Pyramid = (defs.Pyramid = class Pyramid extends Shape {
-    // **Pyramid** demonstrates flat vs smooth shading (a boolean argument selects
-    // which one).  It is a 3D shape with a square base and four triangular faces.
-    constructor(using_flat_shading) {
-        super("position", "normal", "texture_coord");
+class Ramp extends Shape {
+  constructor() {
+    super("positions", "normals", "texture_coord");
 
-        if (!using_flat_shading) {
-            // Method 1: A pyramid with shared vertices. Compact, performs better,
-            // but can't produce flat shading or discontinuous seams in textures.
-            this.arrays.position = Vector.cast(
-                [-1, -1, -1], // Base vertices
-                [1, -1, -1],
-                [1, -1, 1],
-                [-1, -1, 1],
-                [0, 1, 0] // Apex vertex
-            );
-            const normal_base = Vector.of(0, -1, 0);
-            const normal_sides = [
-                Vector.of(0, 1, 1).normalized(),
-                Vector.of(1, 1, 0).normalized(),
-                Vector.of(0, 1, -1).normalized(),
-                Vector.of(-1, 1, 0).normalized(),
-            ];
-            this.arrays.normal = Vector.cast(
-                normal_base,
-                normal_base,
-                normal_base,
-                normal_base, // Base normals
-                normal_sides[0],
-                normal_sides[0],
-                normal_sides[0],
-                normal_sides[1],
-                normal_sides[1],
-                normal_sides[1],
-                normal_sides[2],
-                normal_sides[2],
-                normal_sides[2],
-                normal_sides[3],
-                normal_sides[3],
-                normal_sides[3]
-            );
-            this.arrays.texture_coord = Vector.cast(
-                [0, 0],
-                [1, 0],
-                [1, 1],
-                [0, 1], // Base texture coordinates
-                [0.5, 1],
-                [1, 0],
-                [0, 0],
-                [0.5, 1],
-                [1, 0],
-                [0, 0],
-                [0.5, 1],
-                [1, 0],
-                [0, 0],
-                [0.5, 1],
-                [1, 0],
-                [0, 0]
-            );
-            // Indices for base and sides
-            this.indices.push(
-                0,
-                1,
-                2,
-                0,
-                2,
-                3, // Base
-                4,
-                0,
-                1,
-                4,
-                1,
-                2,
-                4,
-                2,
-                3,
-                4,
-                3,
-                0
-            ); // Sides
-        } else {
-            // Method 2: A pyramid with independent triangles.
-            this.arrays.position = Vector.cast(
-                [-1, -1, -1],
-                [1, -1, -1],
-                [1, -1, 1],
-                [-1, -1, 1], // Base
-                [-1, -1, -1],
-                [1, -1, -1],
-                [0, 1, 0], // Side 1
-                [1, -1, -1],
-                [1, -1, 1],
-                [0, 1, 0], // Side 2
-                [1, -1, 1],
-                [-1, -1, 1],
-                [0, 1, 0], // Side 3
-                [-1, -1, 1],
-                [-1, -1, -1],
-                [0, 1, 0] // Side 4
-            );
-            this.arrays.normal = Vector.cast(
-                [0, -1, 0],
-                [0, -1, 0],
-                [0, -1, 0],
-                [0, -1, 0], // Base
-                [0, 1, 1].normalized(),
-                [0, 1, 1].normalized(),
-                [0, 1, 1].normalized(), // Side 1
-                [1, 1, 0].normalized(),
-                [1, 1, 0].normalized(),
-                [1, 1, 0].normalized(), // Side 2
-                [0, 1, -1].normalized(),
-                [0, 1, -1].normalized(),
-                [0, 1, -1].normalized(), // Side 3
-                [-1, 1, 0].normalized(),
-                [-1, 1, 0].normalized(),
-                [-1, 1, 0].normalized() // Side 4
-            );
-            this.arrays.texture_coord = Vector.cast(
-                [0, 0],
-                [1, 0],
-                [1, 1],
-                [0, 1], // Base
-                [0.5, 1],
-                [1, 0],
-                [0, 0], // Side 1
-                [0.5, 1],
-                [1, 0],
-                [0, 0], // Side 2
-                [0.5, 1],
-                [1, 0],
-                [0, 0], // Side 3
-                [0.5, 1],
-                [1, 0],
-                [0, 0] // Side 4
-            );
-            // Indices for base and sides
-            this.indices.push(
-                0,
-                1,
-                2,
-                0,
-                2,
-                3, // Base
-                4,
-                5,
-                6,
-                7,
-                8,
-                9,
-                10,
-                11,
-                12,
-                13,
-                14,
-                15
-            ); // Sides
-        }
-    }
-});
+    this.arrays.position = [
+      // Bottom face vertices
+      Vector.of(-10, 0, 0), Vector.of(10, 0, 0), Vector.of(-10, 0, -40), Vector.of(10, 0, -40),
+      // Top face vertices
+      Vector.of(-10, 25, -40), Vector.of(10, 25, -40)
+    ];
+
+    this.arrays.normal = [
+      Vector.of(0, -1, 0), Vector.of(0, -1, 0), Vector.of(0, -1, 0), Vector.of(0, -1, 0),
+      Vector.of(0, 1, 0), Vector.of(0, 1, 0)
+    ];
+
+    this.indices = [
+      0, 1, 2, 1, 3, 2,
+      2, 3, 4, 3, 5, 4,  // Back face
+      0, 2, 4, 0, 4, 1,  // Left face
+      1, 5, 3, 1, 4, 5   // Right face
+    ];
+
+    const scaleFactor = 1.68;
+
+    this.arrays.texture_coord = [
+      // Bottom face texture coordinates
+      Vector.of(0, 0), Vector.of(scaleFactor, 0), Vector.of(0, scaleFactor), Vector.of(scaleFactor, scaleFactor),
+      // Top face texture coordinates
+      Vector.of(0, 0), Vector.of(scaleFactor, 0)
+    ];
+  }
+}
+
 
 const Person = (defs.Person = class Person extends Shape {
     constructor() {
@@ -345,9 +205,9 @@ export class Sisyphus extends Scene {
             ball: new defs.Subdivision_Sphere(4),
             sun: new defs.Subdivision_Sphere(4),
             moon: new defs.Subdivision_Sphere(4),
-            mountain: new Pyramid(false),
+            // mountain: new Pyramid(false),
             sisyphus: new Person(),
-            // background: new TexturedQuad(),
+            ramp: new Ramp(),
         };
 
         // *** Materials
@@ -383,59 +243,23 @@ export class Sisyphus extends Scene {
                 specularity: 1,
                 color: hex_color("#394854"),
             }),
-
-            // background: new Material(new defs.Textured_Phong(1), {
-            //     ambient: 1,
-            //     diffusivity: 0,
-            //     specularity: 0,
-            //     texture: new Texture("assets/bg.jpg"),
-            // }),
+            
+            ramp: new Material(new Texture_Scroll_Y(), {
+                color: hex_color("#A9A9A9"),
+                ambient: 0.5, diffusivity: 0.1, specularity: 0.5,
+                texture: new Texture("assets/ramp_2.png", "LINEAR_MIPMAP_LINEAR")
+            }),
         };
 
-        this.sisyphus_transform = Mat4.identity();
-
-        let model_transform = Mat4.identity();
-
-        this.mountain_transform = model_transform;
-
+        this.sisyphus_transform = Mat4.identity().times(Mat4.translation(0, -30, 10));
         this.mountain_scale = 25;
-
-        this.mountain_transform = this.mountain_transform.times(
-            Mat4.scale(
-                this.mountain_scale,
-                this.mountain_scale,
-                this.mountain_scale
-            )
-        );
-
-        // const up = vec3(0, 1, 0);
-        // const mountain_normal = this.shapes.mountain.arrays.normal[4];
-        // const rotation_axis = up.cross(mountain_normal).normalized();
-        // const rotation_angle = Math.acos(up.dot(mountain_normal));
-
-        this.sisyphus_transform = this.sisyphus_transform.times(
-            Mat4.translation(
-                0,
-                -1 * this.mountain_scale + 2,
-                this.mountain_scale + 2
-            )
-        );
-        // .times(Mat4.rotation((-1 * Math.PI) / 7, 1, 0, 0));
-        //     .times(
-        //         Mat4.rotation(
-        //             rotation_angle,
-        //             rotation_axis[0],
-        //             rotation_axis[1],
-        //             rotation_axis[2]
-        //         )
-        //     );
-
         this.top = false;
         this.initial_camera_location = Mat4.look_at(
-            vec3(0, 10, 4 * this.mountain_scale),
+            vec3(0, 10, 4 * 25),
             vec3(0, 0, 0),
             vec3(0, 1, 0)
         );
+        // this.attached = () => null;
     }
 
     rotate_left() {
@@ -502,12 +326,6 @@ export class Sisyphus extends Scene {
     }
 
     display(context, program_state) {
-        // context.context.clearColor(1, 1, 1, 1);
-        // context.context.clear(
-        //     context.context.COLOR_BUFFER_BIT | context.context.DEPTH_BUFFER_BIT
-        // );
-        // display():  Called once per frame of animation.
-        // Setup -- This part sets up the scene's overall camera matrix, projection matrix, and lights:
         if (!context.scratchpad.controls) {
             this.children.push(
                 (context.scratchpad.controls = new defs.Movement_Controls())
@@ -525,11 +343,6 @@ export class Sisyphus extends Scene {
 
         const t = program_state.animation_time / 1000,
             dt = program_state.animation_delta_time / 1000;
-
-        // background
-        // const background_transform = Mat4.identity()
-        //     .times(Mat4.scale(context.width / context.height, 1, 1));
-        // this.shapes.background.draw(context, program_state, background_transform, this.materials.background);
 
         // sun
         const arc_radius = 2 * this.mountain_scale;
@@ -581,40 +394,49 @@ export class Sisyphus extends Scene {
 
         // mountain and character
 
-        this.shapes.mountain.draw(
-            context,
-            program_state,
-            this.mountain_transform,
-            this.materials.mountain
-        );
+        // this.shapes.mountain.draw(
+        //     context,
+        //     program_state,
+        //     this.mountain_transform,
+        //     this.materials.mountain
+        // );
 
         // previous code for sisyphus going up mountain
 
         let model_transform = Mat4.identity();
 
-        let mountain_scale = this.mountain_scale;
+        // ramp drawing
+        let ramp_scale = 4;
+        let ramp_transform = model_transform
+            .times(Mat4.translation(0,-43,0))
+            .times(Mat4.scale(ramp_scale,ramp_scale,ramp_scale));
+        this.shapes.ramp.draw(context, program_state, ramp_transform, this.materials.ramp);
 
-        let sisyphus_speed =
-            (mountain_scale - 1) / 2 +
-            ((mountain_scale - 1) / 2) * Math.sin((1 / 4) * Math.PI * t);
+        // this.shapes.ramp.arrays.texture_coord.forEach(
+        //     (v, i, l) => v[0] = v[0] * 2000000000 // code from discussion slides
+        // )
+        // this.shapes.ramp.arrays.texture_coord.forEach(
+        //     (v, i, l) => v[1] = v[1] * 2000000000  // code from discussion slides
+        // )
+
+        // angle of ramp
+        const base_vector = Vector.of(-10, 0, 0).minus(Vector.of(-10, 0, -40));
+        const side_vector = Vector.of(-10, 0, 0).minus(Vector.of(-10, 25, -40));
+        const dot_product = base_vector.dot(side_vector);
+        const base_mag = base_vector.norm();
+        const side_mag = side_vector.norm();
+        const cosine_angle = dot_product / (base_mag * side_mag);
+        const ramp_angle = Math.acos(cosine_angle);
+
+        // human position
+        let human_y = t/10;
+        let human_z = -human_y / Math.tan(ramp_angle);
 
         if (!this.top) {
-            this.sisyphus_transform = this.sisyphus_transform.times(
-                Mat4.translation(
-                    0,
-                    2 * sisyphus_speed * 0.01,
-                    -1 * sisyphus_speed * 0.01
-                )
-            );
-        } else {
-            this.sisyphus_transform = this.sisyphus_transform.times(
-                Mat4.translation(
-                    0,
-                    ((-2 * (mountain_scale - 1)) / 2) * 0.01,
-                    ((mountain_scale - 1) / 2) * 0.01
-                )
-            );
-        }
+            this.sisyphus_transform = this.sisyphus_transform
+                .times(Mat4.translation(0,human_y,human_z))
+        } 
+        // this.sisyphus = this.sisyphus_transform;
 
         if (this.sisyphus_transform[1][3] > this.mountain_scale) {
             this.top = true;
@@ -623,20 +445,7 @@ export class Sisyphus extends Scene {
         if (this.sisyphus_transform[1][3] <= this.mountain_scale * -1) {
             this.top = false;
         }
-        // if (this.sisyphus_transform[1][3] > this.mountain_scale) {
-        //     this.sisyphus_transform = Mat4.identity().times(
-        //         Mat4.translation(
-        //             0,
-        //             -1 * this.mountain_scale + 2,
-        //             this.mountain_scale + 2
-        //         )
-        //     );
-        // }
-
-        // this.sisyphus_transform = this.sisyphus_transform.times(
-        //     Mat4.translation(0, 0, -0.1)
-        // );
-
+        
         this.shapes.sisyphus.draw(
             context,
             program_state,
@@ -644,273 +453,40 @@ export class Sisyphus extends Scene {
             this.materials.human
         );
 
-        this.sisyphus = Mat4.inverse(
-            this.sisyphus_transform
-                .times(Mat4.rotation(Math.PI / 4, 1, 0, 0))
-                .times(Mat4.translation(0, 0, 20))
-        );
+        this.sisyphus = this.sisyphus_transform;
 
-        if (this.attached != undefined) {
+         if (this.attached != undefined && this.attached() == this.initial_camera_location) {
             let desired = this.attached();
-
             program_state.camera_inverse = desired;
-            // program_state.camera_inverse = desired.map((x, i) =>
-            //     Vector.from(program_state.camera_inverse[i]).mix(x, 0.1)
-            // );
-        }
+         } else if (this.attached != undefined && this.attached() == this.sisyphus) {
+            const attached_matrix = this.attached();
+            var desired = Mat4.inverse(attached_matrix.times(Mat4.translation(0, 25, -25)));
+            program_state.set_camera(desired);
+         }
     }
 }
 
-class Gouraud_Shader extends Shader {
-    // This is a Shader using Phong_Shader as template
-    // TODO: Modify the glsl coder here to create a Gouraud Shader (Planet 2)
 
-    constructor(num_lights = 2) {
-        super();
-        this.num_lights = num_lights;
-    }
-
-    shared_glsl_code() {
-        // ********* SHARED CODE, INCLUDED IN BOTH SHADERS *********
-        return (
-            ` 
-        precision mediump float;
-        const int N_LIGHTS = ` +
-            this.num_lights +
-            `;
-        uniform float ambient, diffusivity, specularity, smoothness;
-        uniform vec4 light_positions_or_vectors[N_LIGHTS], light_colors[N_LIGHTS];
-        uniform float light_attenuation_factors[N_LIGHTS];
-        uniform vec4 shape_color;
-        uniform vec3 squared_scale, camera_center;
-
-        // Specifier "varying" means a variable's final value will be passed from the vertex shader
-        // on to the next phase (fragment shader), then interpolated per-fragment, weighted by the
-        // pixel fragment's proximity to each of the 3 vertices (barycentric interpolation).
-        varying vec3 N, vertex_worldspace, color;
-        // ***** PHONG SHADING HAPPENS HERE: *****                                       
-        vec3 phong_model_lights( vec3 N, vec3 vertex_worldspace ){                                        
-            // phong_model_lights():  Add up the lights' contributions.
-            vec3 E = normalize( camera_center - vertex_worldspace );
-            vec3 result = vec3( 0.0 );
-            for(int i = 0; i < N_LIGHTS; i++){
-                // Lights store homogeneous coords - either a position or vector.  If w is 0, the 
-                // light will appear directional (uniform direction from all points), and we 
-                // simply obtain a vector towards the light by directly using the stored value.
-                // Otherwise if w is 1 it will appear as a point light -- compute the vector to 
-                // the point light's location from the current surface point.  In either case, 
-                // fade (attenuate) the light as the vector needed to reach it gets longer.  
-                vec3 surface_to_light_vector = light_positions_or_vectors[i].xyz - 
-                                               light_positions_or_vectors[i].w * vertex_worldspace;                                             
-                float distance_to_light = length( surface_to_light_vector );
-
-                vec3 L = normalize( surface_to_light_vector );
-                vec3 H = normalize( L + E );
-                // Compute the diffuse and specular components from the Phong
-                // Reflection Model, using Blinn's "halfway vector" method:
-                float diffuse  =      max( dot( N, L ), 0.0 );
-                float specular = pow( max( dot( N, H ), 0.0 ), smoothness );
-                float attenuation = 1.0 / (1.0 + light_attenuation_factors[i] * distance_to_light * distance_to_light );
-                
-                vec3 light_contribution = shape_color.xyz * light_colors[i].xyz * diffusivity * diffuse
-                                                          + light_colors[i].xyz * specularity * specular;
-                result += attenuation * light_contribution;
-            }
-            return result;
-        } `
-        );
-    }
-
-    vertex_glsl_code() {
-        // ********* VERTEX SHADER *********
-        return (
-            this.shared_glsl_code() +
-            `
-            attribute vec3 position, normal;                            
-            // Position is expressed in object coordinates.
+class Texture_Scroll_Y extends Textured_Phong {
+    // TODO:  Modify the shader below (right now it's just the same fragment shader as Textured_Phong) for requirement #6.
+    fragment_glsl_code() {
+        return this.shared_glsl_code() + `
+            varying vec2 f_tex_coord;
+            uniform sampler2D texture;
+            uniform float animation_time, animation_delta_time;
             
-            uniform mat4 model_transform;
-            uniform mat4 projection_camera_model_transform;
-    
-            void main(){                                                                   
-                // The vertex's final resting place (in NDCS):
-                gl_Position = projection_camera_model_transform * vec4( position, 1.0 ); // position in screen space
-                // The final normal vector in screen space.
-                N = normalize( mat3( model_transform ) * normal / squared_scale);
-                vertex_worldspace = ( model_transform * vec4( position, 1.0 ) ).xyz;
-                color = phong_model_lights( normalize( N ), vertex_worldspace );
-            } `
-        );
-    }
-
-    fragment_glsl_code() {
-        // ********* FRAGMENT SHADER *********
-        // A fragment is a pixel that's overlapped by the current triangle.
-        // Fragments affect the final image or get discarded due to depth.
-        return (
-            this.shared_glsl_code() +
-            `
-            void main(){                                                           
-                // Compute an initial (ambient) color:
-                gl_FragColor = vec4( shape_color.xyz * ambient, shape_color.w );
-                // Compute the final color with contributions from lights:
-                gl_FragColor.xyz = color;
-            } `
-        );
-    }
-
-    send_material(gl, gpu, material) {
-        // send_material(): Send the desired shape-wide material qualities to the
-        // graphics card, where they will tweak the Phong lighting formula.
-        gl.uniform4fv(gpu.shape_color, material.color);
-        gl.uniform1f(gpu.ambient, material.ambient);
-        gl.uniform1f(gpu.diffusivity, material.diffusivity);
-        gl.uniform1f(gpu.specularity, material.specularity);
-        gl.uniform1f(gpu.smoothness, material.smoothness);
-    }
-
-    send_gpu_state(gl, gpu, gpu_state, model_transform) {
-        // send_gpu_state():  Send the state of our whole drawing context to the GPU.
-        const O = vec4(0, 0, 0, 1),
-            camera_center = gpu_state.camera_transform.times(O).to3();
-        gl.uniform3fv(gpu.camera_center, camera_center);
-        // Use the squared scale trick from "Eric's blog" instead of inverse transpose matrix:
-        const squared_scale = model_transform
-            .reduce((acc, r) => {
-                return acc.plus(vec4(...r).times_pairwise(r));
-            }, vec4(0, 0, 0, 0))
-            .to3();
-        gl.uniform3fv(gpu.squared_scale, squared_scale);
-        // Send the current matrices to the shader.  Go ahead and pre-compute
-        // the products we'll need of the of the three special matrices and just
-        // cache and send those.  They will be the same throughout this draw
-        // call, and thus across each instance of the vertex shader.
-        // Transpose them since the GPU expects matrices as column-major arrays.
-        const PCM = gpu_state.projection_transform
-            .times(gpu_state.camera_inverse)
-            .times(model_transform);
-        gl.uniformMatrix4fv(
-            gpu.model_transform,
-            false,
-            Matrix.flatten_2D_to_1D(model_transform.transposed())
-        );
-        gl.uniformMatrix4fv(
-            gpu.projection_camera_model_transform,
-            false,
-            Matrix.flatten_2D_to_1D(PCM.transposed())
-        );
-
-        // Omitting lights will show only the material color, scaled by the ambient term:
-        if (!gpu_state.lights.length) return;
-
-        const light_positions_flattened = [],
-            light_colors_flattened = [];
-        for (let i = 0; i < 4 * gpu_state.lights.length; i++) {
-            light_positions_flattened.push(
-                gpu_state.lights[Math.floor(i / 4)].position[i % 4]
-            );
-            light_colors_flattened.push(
-                gpu_state.lights[Math.floor(i / 4)].color[i % 4]
-            );
-        }
-        gl.uniform4fv(
-            gpu.light_positions_or_vectors,
-            light_positions_flattened
-        );
-        gl.uniform4fv(gpu.light_colors, light_colors_flattened);
-        gl.uniform1fv(
-            gpu.light_attenuation_factors,
-            gpu_state.lights.map((l) => l.attenuation)
-        );
-    }
-
-    update_GPU(context, gpu_addresses, gpu_state, model_transform, material) {
-        // update_GPU(): Define how to synchronize our JavaScript's variables to the GPU's.  This is where the shader
-        // recieves ALL of its inputs.  Every value the GPU wants is divided into two categories:  Values that belong
-        // to individual objects being drawn (which we call "Material") and values belonging to the whole scene or
-        // program (which we call the "Program_State").  Send both a material and a program state to the shaders
-        // within this function, one data field at a time, to fully initialize the shader for a draw.
-
-        // Fill in any missing fields in the Material object with custom defaults for this shader:
-        const defaults = {
-            color: color(0, 0, 0, 1),
-            ambient: 0,
-            diffusivity: 1,
-            specularity: 1,
-            smoothness: 40,
-        };
-        material = Object.assign({}, defaults, material);
-
-        this.send_material(context, gpu_addresses, material);
-        this.send_gpu_state(context, gpu_addresses, gpu_state, model_transform);
-    }
-}
-
-class Ring_Shader extends Shader {
-    update_GPU(
-        context,
-        gpu_addresses,
-        graphics_state,
-        model_transform,
-        material
-    ) {
-        // update_GPU():  Defining how to synchronize our JavaScript's variables to the GPU's:
-        const [P, C, M] = [
-                graphics_state.projection_transform,
-                graphics_state.camera_inverse,
-                model_transform,
-            ],
-            PCM = P.times(C).times(M);
-        context.uniformMatrix4fv(
-            gpu_addresses.model_transform,
-            false,
-            Matrix.flatten_2D_to_1D(model_transform.transposed())
-        );
-        context.uniformMatrix4fv(
-            gpu_addresses.projection_camera_model_transform,
-            false,
-            Matrix.flatten_2D_to_1D(PCM.transposed())
-        );
-    }
-
-    shared_glsl_code() {
-        // ********* SHARED CODE, INCLUDED IN BOTH SHADERS *********
-        return `
-        precision mediump float;
-        varying vec4 point_position;
-        varying vec4 center;
-        `;
-    }
-
-    vertex_glsl_code() {
-        // ********* VERTEX SHADER *********
-        // TODO:  Complete the main function of the vertex shader (Extra Credit Part II).
-        return (
-            this.shared_glsl_code() +
-            `
-        attribute vec3 position;
-        uniform mat4 model_transform;
-        uniform mat4 projection_camera_model_transform;
-        
-        void main(){
-            // The vertex's final resting place (in NDCS):
-            gl_Position = projection_camera_model_transform * vec4( position, 1.0); 
-            center = model_transform * vec4(0.0, 0.0, 0.0, 1.0);
-            point_position = model_transform * vec4(position, 1.0);
-        }`
-        );
-    }
-
-    fragment_glsl_code() {
-        // ********* FRAGMENT SHADER *********
-        // TODO:  Complete the main function of the fragment shader (Extra Credit Part II).
-        return (
-            this.shared_glsl_code() +
-            `
-        void main(){
-            float sinusoidal = sin(20.0 * distance(point_position, center));
-            gl_FragColor = sinusoidal * vec4(0.4783, 0.3478, 0.1739, 1);
-        }`
-        );
+            void main(){
+                // code from github page mentioned in discussion slides
+                // Sample the texture image in the correct place:
+                float offset = -4.0 * animation_time;
+                vec2 scaled_tex_coord = vec2(f_tex_coord.x, mod(f_tex_coord.y + offset, 314.0));
+                vec4 tex_color = texture2D( texture, scaled_tex_coord);
+                
+                if( tex_color.w < .01 ) discard;
+                                                                         // Compute an initial (ambient) color:
+                gl_FragColor = vec4( ( tex_color.xyz + shape_color.xyz ) * ambient, shape_color.w * tex_color.w ); 
+                                                                         // Compute the final color with contributions from lights:
+                gl_FragColor.xyz += phong_model_lights( normalize( N ), vertex_worldspace );
+        } `;
     }
 }
