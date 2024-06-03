@@ -359,3 +359,194 @@ export class Collision_Demo extends Simulation {
                                      </p><p>This scene extends class Simulation, which carefully manages stepping simulation time for any scenes that subclass it.  It totally decouples the whole simulation from the frame rate, following the suggestions in the blog post <a href=\"https://gafferongames.com/post/fix_your_timestep/\" target=\"blank\">\"Fix Your Timestep\"</a> by Glenn Fielder.  Buttons allow you to speed up and slow down time to show that the simulation's answers do not change.</p>`;
     }
 }
+
+export class SphereDemo extends Scene {
+    constructor() {
+        super();
+        this.shapes = {
+            sphere: new defs.Subdivision_Sphere(4),
+            collision_sphere: new defs.Subdivision_Sphere(4),
+            floor: new defs.Cube()
+        };
+
+        this.materials = {
+            sphere: new Material(new defs.Phong_Shader(), {
+                color: color(0.5, 0.5, 0.5, 1),
+                ambient: 0.2,
+                diffusivity: 0.8,
+                specularity: 0.5,
+            }),
+            collision: new Material(new defs.Phong_Shader(), {
+                color: color(0, 1, 0, 0.3),
+                ambient: 0.5,
+                diffusivity: 0.5,
+                specularity: 0.5,
+            }),
+            floor: new Material(new defs.Phong_Shader(), {
+                color: color(0.6, 0.6, 0.6, 1),
+                ambient: 0.2,
+                diffusivity: 0.8,
+                specularity: 0.5,
+            }),
+            wireframe: new Material(new defs.Basic_Shader())
+        };
+
+        this.rotating = true;
+        this.show_collision_boxes = false;
+        this.sphere_position = vec3(0, 5, 0); // Initial position of the sphere
+        this.sphere_velocity = vec3(0, 0, 0); // Initial velocity of the sphere
+
+        this.camera_rotation = Mat4.identity();
+        this.camera_translation = Mat4.translation(0, 0, -10);
+
+        this.initial_mouse_pos = null;
+        this.is_dragging = false;
+    }
+
+    make_control_panel() {
+        this.key_triggered_button("Toggle Rotation", ["r"], () => {
+            this.rotating = !this.rotating;
+        });
+        this.key_triggered_button("Toggle Collision Boxes", ["c"], () => {
+            this.show_collision_boxes = !this.show_collision_boxes;
+        });
+
+        // Key controls for translating the camera
+        this.key_triggered_button("Move Forward", ["w"], () => this.camera_translation.pre_multiply(Mat4.translation(0, 0, 0.5)));
+        this.key_triggered_button("Move Backward", ["s"], () => this.camera_translation.pre_multiply(Mat4.translation(0, 0, -0.5)));
+        this.key_triggered_button("Move Left", ["a"], () => this.camera_translation.pre_multiply(Mat4.translation(0.5, 0, 0)));
+        this.key_triggered_button("Move Right", ["d"], () => this.camera_translation.pre_multiply(Mat4.translation(-0.5, 0, 0)));
+        this.key_triggered_button("Move Up", ["q"], () => this.camera_translation.pre_multiply(Mat4.translation(0, -0.5, 0)));
+        this.key_triggered_button("Move Down", ["e"], () => this.camera_translation.pre_multiply(Mat4.translation(0, 0.5, 0)));
+
+        this.new_line();
+        this.live_string(box => {
+            box.textContent = "Rotation: " + (this.rotating ? "ON" : "OFF");
+        });
+        this.new_line();
+        this.live_string(box => {
+            box.textContent = "Collision Boxes: " + (this.show_collision_boxes ? "Visible" : "Hidden");
+        });
+    }
+
+    display(context, program_state) {
+        if (program_state.animate) {
+            this.t = program_state.animation_time / 1000;
+        }
+
+        // Apply camera transformation
+        const camera_transform = this.camera_translation.times(this.camera_rotation);
+        program_state.set_camera(camera_transform);
+        program_state.projection_transform = Mat4.perspective(Math.PI / 4, context.width / context.height, 1, 100);
+
+        const light_position = vec4(10, 10, 10, 1);
+        program_state.lights = [new Light(light_position, color(1, 1, 1, 1), 1000)];
+
+        // Create a rectangular prism for the floor
+        let floor_transform = Mat4.translation(0, -2, 0)
+            .times(Mat4.rotation(35 * Math.PI / 180, 0, 0, 1))
+            .times(Mat4.scale(10, 0.5, 10));
+        this.shapes.floor.draw(context, program_state, floor_transform, this.materials.floor);
+
+        // Calculate the floor normal
+        const floor_normal = vec3(Math.sin(35 * Math.PI / 180), Math.cos(35 * Math.PI / 180), 0).normalized();
+
+        // Apply gravity to the sphere
+        const gravity = vec3(0, -9.8, 0);
+        let net_force = gravity;
+
+        // Check for collision with the floor
+        const sphere_transform = Mat4.translation(...this.sphere_position);
+        const collision_transform = sphere_transform.times(Mat4.scale(1.1, 1.1, 1.1));
+        let sphere_color = this.materials.sphere;
+
+        if (this.check_collision(sphere_transform, floor_transform)) {
+            sphere_color = this.materials.sphere.override({color: color(1, 0, 0, 1)}); // Turn red on collision
+
+            // Calculate the normal force
+            const normal_force = floor_normal.times(gravity.dot(floor_normal));
+            net_force = gravity.minus(normal_force); // Apply gravity minus the normal force
+
+            // Adjust position to stay on the floor
+            const overlap = this.calculate_overlap(sphere_transform, floor_transform);
+            this.sphere_position = this.sphere_position.plus(floor_normal.times(overlap));
+        }
+
+        // Update sphere velocity and position
+        this.sphere_velocity = this.sphere_velocity.plus(net_force.times(program_state.animation_delta_time / 1000));
+        this.sphere_position = this.sphere_position.plus(this.sphere_velocity.times(program_state.animation_delta_time / 1000));
+
+        // Draw the sphere
+        this.shapes.sphere.draw(context, program_state, sphere_transform, sphere_color);
+
+        if (this.show_collision_boxes) {
+            this.shapes.collision_sphere.draw(context, program_state, collision_transform, this.materials.collision, "LINE_STRIP");
+
+            // Draw the collision box for the floor
+            let floor_collision_transform = Mat4.translation(0, -2, 0)
+                .times(Mat4.rotation(35 * Math.PI / 180, 0, 0, 1))
+                .times(Mat4.scale(10.1, 0.55, 10.1));
+            this.shapes.floor.draw(context, program_state, floor_collision_transform, this.materials.collision, "LINE_STRIP");
+        }
+
+        // Handle mouse controls for camera rotation
+        this.setup_mouse_controls(context.canvas);
+    }
+
+    check_collision(sphere_transform, floor_transform) {
+        const sphere_center = sphere_transform.times(vec4(0, 0, 0, 1)).to3();
+        const sphere_radius = 1.1; // Slightly larger than the actual radius for collision detection
+        const floor_center = floor_transform.times(vec4(0, 0, 0, 1)).to3();
+        const floor_size = vec3(10.1, 0.55, 10.1);
+
+        // Check if the sphere's collision box intersects with the floor's collision box
+        const distance = sphere_center.minus(floor_center);
+        const overlap_x = Math.abs(distance[0]) - (sphere_radius + floor_size[0]);
+        const overlap_y = Math.abs(distance[1]) - (sphere_radius + floor_size[1]);
+        const overlap_z = Math.abs(distance[2]) - (sphere_radius + floor_size[2]);
+
+        return overlap_x < 0 && overlap_y < 0 && overlap_z < 0;
+    }
+
+    calculate_overlap(sphere_transform, floor_transform) {
+        const sphere_center = sphere_transform.times(vec4(0, 0, 0, 1)).to3();
+        const sphere_radius = 1.1; // Slightly larger than the actual radius for collision detection
+        const floor_center = floor_transform.times(vec4(0, 0, 0, 1)).to3();
+        const floor_size = vec3(10.1, 0.55, 10.1);
+
+        // Calculate the overlap distance along the y-axis
+        const distance_y = sphere_center[1] - floor_center[1];
+        const overlap_y = (sphere_radius + floor_size[1]) - Math.abs(distance_y);
+
+        return overlap_y;
+    }
+
+    setup_mouse_controls(canvas) {
+        const mouse_move_handler = event => {
+            if (!this.is_dragging) return;
+            const current_mouse_pos = vec3(event.clientX, event.clientY, 0);
+            const delta = current_mouse_pos.minus(this.initial_mouse_pos);
+
+            // Adjust camera rotation based on mouse movement
+            const rotation_speed = 0.01;
+            this.camera_rotation.pre_multiply(Mat4.rotation(delta[0] * rotation_speed, 0, 1, 0));
+            this.camera_rotation.pre_multiply(Mat4.rotation(-delta[1] * rotation_speed, 1, 0, 0));
+
+            this.initial_mouse_pos = current_mouse_pos;
+        };
+
+        const mouse_down_handler = event => {
+            this.is_dragging = true;
+            this.initial_mouse_pos = vec3(event.clientX, event.clientY, 0);
+        };
+
+        const mouse_up_handler = () => {
+            this.is_dragging = false;
+        };
+
+        canvas.addEventListener('mousemove', mouse_move_handler);
+        canvas.addEventListener('mousedown', mouse_down_handler);
+        canvas.addEventListener('mouseup', mouse_up_handler);
+        canvas.addEventListener('mouseleave', mouse_up_handler);
+    }
+}
