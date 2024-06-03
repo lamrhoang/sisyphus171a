@@ -43,13 +43,14 @@ class Ramp extends Shape {
       1, 5, 3, 1, 4, 5   // Right face
     ];
 
-    const scaleFactor = 1.68;
+    const length = 40;
+    const height = 25;
 
     this.arrays.texture_coord = [
-      // Bottom face texture coordinates
-      Vector.of(0, 0), Vector.of(scaleFactor, 0), Vector.of(0, scaleFactor), Vector.of(scaleFactor, scaleFactor),
-      // Top face texture coordinates
-      Vector.of(0, 0), Vector.of(scaleFactor, 0)
+        // Bottom face texture coordinates
+        vec(0, 0), vec(1, 0), vec(0, length / (length + height)), vec(1, length / (length + height)),
+        // Top face texture coordinates
+        vec(0, length / (length + height) + height / (length + height)), vec(1, length / (length + height) + height / (length + height))
     ];
   }
 }
@@ -251,8 +252,7 @@ export class Sisyphus extends Scene {
             }),
         };
 
-        this.sisyphus_transform = Mat4.identity().times(Mat4.translation(0, -30, 10));
-        this.mountain_scale = 25;
+        this.sisyphus_transform = Mat4.identity().times(Mat4.translation(0, -33, -5));
         this.top = false;
         this.initial_camera_location = Mat4.look_at(
             vec3(0, 10, 4 * 25),
@@ -345,7 +345,7 @@ export class Sisyphus extends Scene {
             dt = program_state.animation_delta_time / 1000;
 
         // sun
-        const arc_radius = 2 * this.mountain_scale;
+        const arc_radius = 50;
         const max_angle = (Math.PI * 2) / 7;
         const sway_period = 8;
 
@@ -438,11 +438,11 @@ export class Sisyphus extends Scene {
         } 
         // this.sisyphus = this.sisyphus_transform;
 
-        if (this.sisyphus_transform[1][3] > this.mountain_scale) {
+        if (this.sisyphus_transform[1][3] > 30) {
             this.top = true;
         }
 
-        if (this.sisyphus_transform[1][3] <= this.mountain_scale * -1) {
+        if (this.sisyphus_transform[1][3] <= 30 * -1) {
             this.top = false;
         }
         
@@ -466,9 +466,7 @@ export class Sisyphus extends Scene {
     }
 }
 
-
 class Texture_Scroll_Y extends Textured_Phong {
-    // TODO:  Modify the shader below (right now it's just the same fragment shader as Textured_Phong) for requirement #6.
     fragment_glsl_code() {
         return this.shared_glsl_code() + `
             varying vec2 f_tex_coord;
@@ -476,17 +474,17 @@ class Texture_Scroll_Y extends Textured_Phong {
             uniform float animation_time, animation_delta_time;
             
             void main(){
-                // code from github page mentioned in discussion slides
-                // Sample the texture image in the correct place:
-                float offset = -4.0 * animation_time;
-                vec2 scaled_tex_coord = vec2(f_tex_coord.x, mod(f_tex_coord.y + offset, 314.0));
-                vec4 tex_color = texture2D( texture, scaled_tex_coord);
+                // Create an offset for the texture coordinates
+                float offset = -0.1 * animation_time; // Adjust the speed as necessary
+                vec2 scrolling_tex_coord = vec2(f_tex_coord.x, mod(f_tex_coord.y + offset, 1.0)); // Wrap around using mod
+                vec4 tex_color = texture2D(texture, scrolling_tex_coord);
                 
-                if( tex_color.w < .01 ) discard;
-                                                                         // Compute an initial (ambient) color:
-                gl_FragColor = vec4( ( tex_color.xyz + shape_color.xyz ) * ambient, shape_color.w * tex_color.w ); 
-                                                                         // Compute the final color with contributions from lights:
-                gl_FragColor.xyz += phong_model_lights( normalize( N ), vertex_worldspace );
-        } `;
+                if (tex_color.w < .01) discard; // Discard transparent pixels
+                
+                // Compute an initial (ambient) color
+                gl_FragColor = vec4((tex_color.xyz + shape_color.xyz) * ambient, shape_color.w * tex_color.w);
+                // Compute the final color with contributions from lights
+                gl_FragColor.xyz += phong_model_lights(normalize(N), vertex_worldspace);
+            } `;
     }
 }
