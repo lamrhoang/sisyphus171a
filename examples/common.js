@@ -789,10 +789,12 @@ const Fake_Bump_Map = defs.Fake_Bump_Map =
             return this.shared_glsl_code() + `
                 varying vec2 f_tex_coord;
                 uniform sampler2D texture;
+                uniform float texture_offset;
         
                 void main(){
                     // Sample the texture image in the correct place:
-                    vec4 tex_color = texture2D( texture, f_tex_coord );
+                    vec2 scrolling_tex_coord = vec2(f_tex_coord.x, mod(f_tex_coord.y + texture_offset, 1.0)); // Wrap around using mod
+                    vec4 tex_color = texture2D(texture, scrolling_tex_coord);
                     if( tex_color.w < .01 ) discard;
                     // Slightly disturb normals based on sampling the same image that was used for texturing:
                     vec3 bumped_N  = N + tex_color.rgb - .5*vec3(1,1,1);
@@ -801,6 +803,10 @@ const Fake_Bump_Map = defs.Fake_Bump_Map =
                     // Compute the final color with contributions from lights:
                     gl_FragColor.xyz += phong_model_lights( normalize( bumped_N ), vertex_worldspace );
                   } `;
+        }
+         update_GPU(context, gpu_addresses, graphics_state, model_transform, material) {
+            super.update_GPU(context, gpu_addresses, graphics_state, model_transform, material);
+            context.uniform1f(gpu_addresses.texture_offset, material.texture_offset);
         }
     }
 

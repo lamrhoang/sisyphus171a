@@ -18,7 +18,7 @@ const {
     Texture,
 } = tiny;
 
-const {Cube, Axis_Arrows, Textured_Phong} = defs;
+const {Cube, Axis_Arrows, Textured_Phong, Fake_Bump_Map} = defs;
 
 class Ramp extends Shape {
   constructor() {
@@ -94,11 +94,13 @@ const Person = (defs.Person = class Person extends Shape {
                 specularity: 1,
                 color: hex_color("#fdf5e2"),
             }),
-            ball: new Material(new defs.Phong_Shader(), {
-                ambient: 0.5,
+             ball: new Material(new defs.Fake_Bump_Map(), {
+                ambient: 0.2,
                 diffusivity: 0.5,
                 specularity: 1,
-                color: hex_color("#808080"),
+                color: hex_color("#A9A9A9"),
+                texture: new Texture("assets/ramp_final.png", "LINEAR_MIPMAP_LINEAR"),
+                texture_offset: 0,
             }),
         };
     }
@@ -219,11 +221,13 @@ export class Sisyphus extends Scene {
                 specularity: 1,
                 color: hex_color("#FFFFFF"),
             }),
-            ball: new Material(new defs.Phong_Shader(), {
+            ball: new Material(new defs.Fake_Bump_Map(), {
                 ambient: 0.5,
                 diffusivity: 0.5,
                 specularity: 1,
                 color: hex_color("#654321"),
+                texture: new Texture("assets/ramp_final.png", "LINEAR_MIPMAP_LINEAR"),
+                texture_offset: 0,
             }),
             sun: new Material(new defs.Phong_Shader(), {
                 ambient: 0.5,
@@ -245,10 +249,10 @@ export class Sisyphus extends Scene {
                 color: hex_color("#394854"),
             }),
             
-            ramp: new Material(new Texture_Scroll_Y(), {
+            ramp: new Material(new defs.Fake_Bump_Map(), {
                 color: hex_color("#A9A9A9"),
-                ambient: 0.3, diffusivity: 0.8, specularity: 0.5,
-                texture: new Texture("assets/ramp_final.png", "LINEAR_MIPMAP_LINEAR"),
+                ambient: 0.3, diffusivity: 0.8, specularity: 1,
+                texture: new Texture("assets/ramp_2.png", "LINEAR_MIPMAP_LINEAR"),
                 texture_offset: 0,
             }),
         };
@@ -286,13 +290,13 @@ export class Sisyphus extends Scene {
 
     move_left() {
         this.sisyphus_transform = this.sisyphus_transform.times(
-            Mat4.translation(-0.5, 0, 0)
+            Mat4.translation(-2, 0, 0)
         );
     }
 
     move_right() {
         this.sisyphus_transform = this.sisyphus_transform.times(
-            Mat4.translation(0.5, 0, 0)
+            Mat4.translation(2, 0, 0)
         );
     }
 
@@ -439,7 +443,7 @@ export class Sisyphus extends Scene {
         );
 
         const light_position = vec4(sun_x, sun_y, sun_z, 1);
-        program_state.lights = [new Light(light_position, sun_color, 100)];
+        program_state.lights = [new Light(light_position, sun_color, 1000)];
 
     
         // previous code for sisyphus going up mountain
@@ -465,16 +469,9 @@ export class Sisyphus extends Scene {
 
         this.sisyphus = this.sisyphus_transform;
 
-         // if (this.attached != undefined && this.attached() == this.initial_camera_location) {
-         //    let desired = this.attached();
-         //    program_state.camera_inverse = desired;
-         // } else if (this.attached != undefined && this.attached() == this.sisyphus) {
-         //    const attached_matrix = this.attached();
-         //    var desired = Mat4.inverse(attached_matrix.times(Mat4.translation(0, 25, -25)));
-         //    program_state.set_camera(desired);
-         // }
+    
         const camera_offset = Mat4.translation(0, 10, 40);
-         if (this.attached !== undefined && this.attached() === this.sisyphus_transform) {
+        if (this.attached !== undefined && this.attached() === this.sisyphus_transform) {
             const desired_camera_transform = this.sisyphus_transform.times(camera_offset).times(Mat4.inverse(Mat4.translation(0, 0, 0)));
             program_state.set_camera(Mat4.inverse(desired_camera_transform));
         } else if (this.attached !== undefined && this.attached() === this.initial_camera_location) {
@@ -502,6 +499,76 @@ class Texture_Scroll_Y extends Textured_Phong {
                 gl_FragColor = vec4((tex_color.xyz + shape_color.xyz) * ambient, shape_color.w * tex_color.w);
                 // Compute the final color with contributions from lights
                 gl_FragColor.xyz += phong_model_lights(normalize(N), vertex_worldspace);
+            } `;
+    }
+
+    update_GPU(context, gpu_addresses, graphics_state, model_transform, material) {
+        super.update_GPU(context, gpu_addresses, graphics_state, model_transform, material);
+        context.uniform1f(gpu_addresses.texture_offset, material.texture_offset);
+    }
+}
+
+class Texture_Scoll_And_Bump extends Textured_Phong {
+    vertex_glsl_code() {
+        // ********* VERTEX SHADER *********
+        return this.shared_glsl_code() + `
+            varying vec2 f_tex_coord;
+            varying vec3 Ps, Pt;
+            attribute vec3 position, normal;                            
+            // Position is expressed in object coordinates.
+            attribute vec2 texture_coord;
+            
+            uniform mat4 model_transform;
+            uniform mat4 projection_camera_model_transform;
+    
+            void main(){                                                                   
+                // The vertex's final resting place (in NDCS):
+                gl_Position = projection_camera_model_transform * vec4( position, 1.0 );
+                // The final normal vector in screen space.
+                N = normalize( mat3( model_transform ) * normal / squared_scale);
+                vertex_worldspace = ( model_transform * vec4( position, 1.0 ) ).xyz;
+                // Turn the per-vertex texture coordinate into an interpolated variable.
+                f_tex_coord = texture_coord;
+                int u = f_tex_coord[0];
+                int v = f_tex_coord[1];
+                vec3 Ps = (position[u+0.01][v] + position[u+0.01][v])/0.02;
+                vec3 Pt = (position[u][v+0.01] + position[u][v+0.01])/0.02;
+              } `;
+    }
+    fragment_glsl_code() {
+        return this.shared_glsl_code() + `
+            varying vec2 f_tex_coord, Ps, Pt;
+            uniform sampler2D texture;
+            uniform float texture_offset;
+            uniform sampler2D normal_map;
+
+            void main() {
+                // Create an offset for the texture coordinates
+                vec2 scrolling_tex_coord = vec2(f_tex_coord.x, mod(f_tex_coord.y + texture_offset, 1.0)); // Wrap around using mod
+                vec4 tex_color = texture2D(texture, scrolling_tex_coord);
+                
+                if (tex_color.w < .01) discard; // Discard transparent pixels
+
+                // vec4 normal_color = normalize(texture2D(normal_map, scrolling_tex_coord));
+                int u = f_tex_coord[0];
+                int v = f_tex_coord[1];
+                vec3 Bu = (normal_map[u+0.01][v] + normal_map[u+0.01][v])/0.02;
+                vec3 Bv = (normal_map[u][v+0.01] + normal_map[u][v+0.01])/0.02;
+
+                
+                // vec3 Bu = dFdx(normal_color.rgb);
+                // vec3 Bv = dFdy(normal_color.rgb);
+                // vec3 Pt = dFdx(vertex_worldspace);
+                // vec3 Ps = dFdy(vertex_worldspace);
+
+                vec3 N_cross_Pt = cross(N, Pt);
+                vec3 N_cross_Ps = cross(N, Ps);
+                vec3 N_bump = (Bu * N_cross_Pt - Bv * N_cross_Ps) / length(N);
+                
+                // Compute an initial (ambient) color
+                gl_FragColor = vec4((tex_color.xyz + shape_color.xyz) * ambient, shape_color.w * tex_color.w);
+                // Compute the final color with contributions from lights
+                gl_FragColor.xyz += phong_model_lights(normalize(N_bump), vertex_worldspace);
             } `;
     }
 
