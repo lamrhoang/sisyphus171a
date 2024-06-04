@@ -18,43 +18,234 @@ const {
     Texture,
 } = tiny;
 
-const {Cube, Axis_Arrows, Textured_Phong} = defs;
+const { Cube, Axis_Arrows, Textured_Phong } = defs;
+
+const Pyramid = (defs.Pyramid = class Pyramid extends Shape {
+    // **Pyramid** demonstrates flat vs smooth shading (a boolean argument selects
+    // which one).  It is a 3D shape with a square base and four triangular faces.
+    constructor(using_flat_shading) {
+        super("position", "normal", "texture_coord");
+        if (!using_flat_shading) {
+            // Method 1: A pyramid with shared vertices. Compact, performs better,
+            // but can't produce flat shading or discontinuous seams in textures.
+            this.arrays.position = Vector.cast(
+                [-1, -1, -1], // Base vertices
+                [1, -1, -1],
+                [1, -1, 1],
+                [-1, -1, 1],
+                [0, 1, 0] // Apex vertex
+            );
+            const normal_base = Vector.of(0, -1, 0);
+            const normal_sides = [
+                Vector.of(0, 1, 1).normalized(),
+                Vector.of(1, 1, 0).normalized(),
+                Vector.of(0, 1, -1).normalized(),
+                Vector.of(-1, 1, 0).normalized(),
+            ];
+            this.arrays.normal = Vector.cast(
+                normal_base,
+                normal_base,
+                normal_base,
+                normal_base, // Base normals
+                normal_sides[0],
+                normal_sides[0],
+                normal_sides[0],
+                normal_sides[1],
+                normal_sides[1],
+                normal_sides[1],
+                normal_sides[2],
+                normal_sides[2],
+                normal_sides[2],
+                normal_sides[3],
+                normal_sides[3],
+                normal_sides[3]
+            );
+            this.arrays.texture_coord = Vector.cast(
+                [0, 0],
+                [1, 0],
+                [1, 1],
+                [0, 1], // Base texture coordinates
+                [0.5, 1],
+                [1, 0],
+                [0, 0],
+                [0.5, 1],
+                [1, 0],
+                [0, 0],
+                [0.5, 1],
+                [1, 0],
+                [0, 0],
+                [0.5, 1],
+                [1, 0],
+                [0, 0]
+            );
+            // Indices for base and sides
+            this.indices.push(
+                0,
+                1,
+                2,
+                0,
+                2,
+                3, // Base
+                4,
+                0,
+                1,
+                4,
+                1,
+                2,
+                4,
+                2,
+                3,
+                4,
+                3,
+                0
+            ); // Sides
+        } else {
+            // Method 2: A pyramid with independent triangles.
+            this.arrays.position = Vector.cast(
+                [-1, -1, -1],
+                [1, -1, -1],
+                [1, -1, 1],
+                [-1, -1, 1], // Base
+                [-1, -1, -1],
+                [1, -1, -1],
+                [0, 1, 0], // Side 1
+                [1, -1, -1],
+                [1, -1, 1],
+                [0, 1, 0], // Side 2
+                [1, -1, 1],
+                [-1, -1, 1],
+                [0, 1, 0], // Side 3
+                [-1, -1, 1],
+                [-1, -1, -1],
+                [0, 1, 0] // Side 4
+            );
+            this.arrays.normal = Vector.cast(
+                [0, -1, 0],
+                [0, -1, 0],
+                [0, -1, 0],
+                [0, -1, 0], // Base
+                [0, 1, 1].normalized(),
+                [0, 1, 1].normalized(),
+                [0, 1, 1].normalized(), // Side 1
+                [1, 1, 0].normalized(),
+                [1, 1, 0].normalized(),
+                [1, 1, 0].normalized(), // Side 2
+                [0, 1, -1].normalized(),
+                [0, 1, -1].normalized(),
+                [0, 1, -1].normalized(), // Side 3
+                [-1, 1, 0].normalized(),
+                [-1, 1, 0].normalized(),
+                [-1, 1, 0].normalized() // Side 4
+            );
+            this.arrays.texture_coord = Vector.cast(
+                [0, 0],
+                [1, 0],
+                [1, 1],
+                [0, 1], // Base
+                [0.5, 1],
+                [1, 0],
+                [0, 0], // Side 1
+                [0.5, 1],
+                [1, 0],
+                [0, 0], // Side 2
+                [0.5, 1],
+                [1, 0],
+                [0, 0], // Side 3
+                [0.5, 1],
+                [1, 0],
+                [0, 0] // Side 4
+            );
+            // Indices for base and sides
+            this.indices.push(
+                0,
+                1,
+                2,
+                0,
+                2,
+                3, // Base
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12,
+                13,
+                14,
+                15
+            ); // Sides
+        }
+    }
+});
 
 class Ramp extends Shape {
-  constructor() {
-    super("positions", "normals", "texture_coord");
+    constructor() {
+        super("positions", "normals", "texture_coord");
 
-    this.arrays.position = [
-      // Bottom face vertices
-      Vector.of(-10, 0, 0), Vector.of(10, 0, 0), Vector.of(-10, 0, -40), Vector.of(10, 0, -40),
-      // Top face vertices
-      Vector.of(-10, 25, -40), Vector.of(10, 25, -40)
-    ];
+        this.arrays.position = [
+            // Bottom face vertices
+            Vector.of(-10, 0, 0),
+            Vector.of(10, 0, 0),
+            Vector.of(-10, 0, -40),
+            Vector.of(10, 0, -40),
+            // Top face vertices
+            Vector.of(-10, 25, -40),
+            Vector.of(10, 25, -40),
+        ];
 
-    this.arrays.normal = [
-      Vector.of(0, -1, 0), Vector.of(0, -1, 0), Vector.of(0, -1, 0), Vector.of(0, -1, 0),
-      Vector.of(0, 1, 0), Vector.of(0, 1, 0)
-    ];
+        this.arrays.normal = [
+            Vector.of(0, -1, 0),
+            Vector.of(0, -1, 0),
+            Vector.of(0, -1, 0),
+            Vector.of(0, -1, 0),
+            Vector.of(0, 1, 0),
+            Vector.of(0, 1, 0),
+        ];
 
-    this.indices = [
-      0, 1, 2, 1, 3, 2,
-      2, 3, 4, 3, 5, 4,  // Back face
-      0, 2, 4, 0, 4, 1,  // Left face
-      1, 5, 3, 1, 4, 5   // Right face
-    ];
+        this.indices = [
+            0,
+            1,
+            2,
+            1,
+            3,
+            2,
+            2,
+            3,
+            4,
+            3,
+            5,
+            4, // Back face
+            0,
+            2,
+            4,
+            0,
+            4,
+            1, // Left face
+            1,
+            5,
+            3,
+            1,
+            4,
+            5, // Right face
+        ];
 
-    const length = 40;
-    const height = 25;
+        const length = 40;
+        const height = 25;
 
-    this.arrays.texture_coord = [
-        // Bottom face texture coordinates
-        vec(0, 0), vec(1, 0), vec(0, length / (length + height)), vec(1, length / (length + height)),
-        // Top face texture coordinates
-        vec(0, length / (length + height) + height / (length + height)), vec(1, length / (length + height) + height / (length + height))
-    ];
-  }
+        this.arrays.texture_coord = [
+            // Bottom face texture coordinates
+            vec(0, 0),
+            vec(1, 0),
+            vec(0, length / (length + height)),
+            vec(1, length / (length + height)),
+            // Top face texture coordinates
+            vec(0, length / (length + height) + height / (length + height)),
+            vec(1, length / (length + height) + height / (length + height)),
+        ];
+    }
 }
-
 
 const Person = (defs.Person = class Person extends Shape {
     constructor() {
@@ -206,7 +397,7 @@ export class Sisyphus extends Scene {
             ball: new defs.Subdivision_Sphere(4),
             sun: new defs.Subdivision_Sphere(4),
             moon: new defs.Subdivision_Sphere(4),
-            // mountain: new Pyramid(false),
+            spike: new Pyramid(false),
             sisyphus: new Person(),
             ramp: new Ramp(),
         };
@@ -244,10 +435,12 @@ export class Sisyphus extends Scene {
                 specularity: 1,
                 color: hex_color("#394854"),
             }),
-            
+
             ramp: new Material(new Texture_Scroll_Y(), {
                 color: hex_color("#A9A9A9"),
-                ambient: 0.3, diffusivity: 0.8, specularity: 0.5,
+                ambient: 0.3,
+                diffusivity: 0.8,
+                specularity: 0.5,
                 texture: new Texture("assets/ramp.png", "LINEAR_MIPMAP_LINEAR"),
                 texture_offset: 0,
             }),
@@ -255,7 +448,7 @@ export class Sisyphus extends Scene {
 
         this.sisyphus_transform = Mat4.identity()
             .times(Mat4.translation(0, -33, -5))
-            .times(Mat4.scale(1.3,1.3,1.3));
+            .times(Mat4.scale(1.3, 1.3, 1.3));
         this.top = false;
         this.initial_camera_location = Mat4.look_at(
             vec3(0, 10, 4 * 25),
@@ -270,6 +463,11 @@ export class Sisyphus extends Scene {
         const cosine_angle = dot_product / (base_mag * side_mag);
         this.ramp_angle = Math.acos(cosine_angle);
         this.character_y_position = this.sisyphus_transform[1][3];
+
+        this.character_z_position = this.sisyphus_transform[2][3];
+
+        this.scores = [];
+        this.score = 0;
     }
 
     rotate_left() {
@@ -297,16 +495,20 @@ export class Sisyphus extends Scene {
     }
 
     move_up() {
-        let move_y = 0.5;
+        let move_y = 1;
         let move_z = -move_y / Math.tan(this.ramp_angle);
 
-        if (this.sisyphus_transform[1][3] > 30) {
-            this.top = true;
-            this.character_y_position = (this.character_y_position + move_y) % 60;
-            return;
-        }
+        this.score += move_y;
+
+        // if (this.sisyphus_transform[1][3] > 30) {
+        //     this.top = true;
+        //     this.character_y_position =
+        //         (this.character_y_position + move_y) % 60;
+        //     return;
+        // }
 
         this.character_y_position = this.character_y_position + move_y;
+        this.character_z_position = this.character_z_position + move_z;
         this.sisyphus_transform = this.sisyphus_transform.times(
             Mat4.translation(0, move_y, move_z)
         );
@@ -317,14 +519,26 @@ export class Sisyphus extends Scene {
         let move_z = -move_y / Math.tan(this.ramp_angle);
 
         if (this.sisyphus_transform[1][3] < -30) {
-            this.character_y_position = (this.character_y_position + move_y) % 60;
+            this.character_y_position =
+                (this.character_y_position + move_y) % 60;
             return;
         }
 
-        this.character_y_position  = this.character_y_position + move_y;
+        this.character_y_position = this.character_y_position + move_y;
         this.sisyphus_transform = this.sisyphus_transform.times(
             Mat4.translation(0, move_y, move_z)
         );
+    }
+
+    restart() {
+        this.scores.push(this.score);
+        this.scores = this.scores.sort(function (a, b) {
+            return a - b;
+        });
+        this.scores = this.scores.reverse();
+
+        // this.new_line();
+        this.score = 0;
     }
 
     make_control_panel() {
@@ -356,13 +570,27 @@ export class Sisyphus extends Scene {
             this.rotate_right()
         );
 
-        this.key_triggered_button("Move Up", ["ArrowUp"], () =>
-            this.move_up()
-        );
+        this.key_triggered_button("Move Up", ["ArrowUp"], () => this.move_up());
 
         this.key_triggered_button("Move Down", ["ArrowDown"], () =>
             this.move_down()
         );
+
+        this.new_line();
+        this.live_string((box) => {
+            box.textContent = "Your score is " + this.score + " so far";
+        });
+        this.new_line();
+        this.live_string((box) => {
+            box.textContent = "Previous Scores: ";
+        });
+        this.new_line();
+        for (let i = 0; i <= this.scores.length - 1; i++) {
+            this.live_string((box) => {
+                box.textContent = (i + 1).toString() + ": " + this.scores[i];
+            });
+            this.new_line();
+        }
     }
 
     interpolateColor(color1, color2, scale) {
@@ -427,10 +655,12 @@ export class Sisyphus extends Scene {
         context.context.clear(
             context.context.COLOR_BUFFER_BIT | context.context.DEPTH_BUFFER_BIT
         );
-
-        sun_transform = sun_transform
+        sun_transform = this.sisyphus_transform
             .times(Mat4.translation(sun_x, sun_y, sun_z))
             .times(Mat4.scale(5, 5, 5));
+
+        console.log(sun_transform[2][3]);
+        console.log(this.character_z_position);
         this.shapes.sun.draw(
             context,
             program_state,
@@ -441,20 +671,46 @@ export class Sisyphus extends Scene {
         const light_position = vec4(sun_x, sun_y, sun_z, 1);
         program_state.lights = [new Light(light_position, sun_color, 100)];
 
-    
         // previous code for sisyphus going up mountain
 
         let model_transform = Mat4.identity();
 
-        // ramp drawing
         let ramp_scale = 4;
-        let ramp_transform = model_transform
-            .times(Mat4.translation(0,-43,0))
-            .times(Mat4.scale(ramp_scale,ramp_scale,ramp_scale));
-        const max_height = 30; 
-        const min_height = -30;
-        const texture_offset = (this.character_y_position - min_height) / (max_height - min_height);
-        this.shapes.ramp.draw(context, program_state, ramp_transform, this.materials.ramp.override({texture_offset:texture_offset}));
+        let ramp_scalex = ramp_scale * 2;
+        // ramp drawing
+        let num_ramps =
+            (this.character_y_position + 33) / (ramp_scale * 10) + 2;
+
+        let ramp_transform = Mat4.identity();
+
+        for (let i = 0; i < num_ramps; i++) {
+            if (i == 0) {
+                ramp_transform = ramp_transform
+                    .times(Mat4.translation(0, -43, 0))
+                    .times(Mat4.scale(ramp_scalex, ramp_scale, ramp_scale));
+            } else {
+                ramp_transform = ramp_transform
+                    .times(
+                        Mat4.translation(0, ramp_scale * 25, ramp_scale * -40)
+                    )
+                    .times(Mat4.scale(ramp_scalex, ramp_scale, ramp_scale));
+            }
+
+            const max_height = 30;
+            const min_height = -30;
+            const texture_offset =
+                (this.character_y_position - min_height) /
+                (max_height - min_height);
+            this.shapes.ramp.draw(
+                context,
+                program_state,
+                ramp_transform,
+                this.materials.ramp.override({ texture_offset: texture_offset })
+            );
+            ramp_transform = ramp_transform.times(
+                Mat4.scale(1 / ramp_scalex, 1 / ramp_scale, 1 / ramp_scale)
+            );
+        }
 
         this.shapes.sisyphus.draw(
             context,
@@ -465,19 +721,27 @@ export class Sisyphus extends Scene {
 
         this.sisyphus = this.sisyphus_transform;
 
-         // if (this.attached != undefined && this.attached() == this.initial_camera_location) {
-         //    let desired = this.attached();
-         //    program_state.camera_inverse = desired;
-         // } else if (this.attached != undefined && this.attached() == this.sisyphus) {
-         //    const attached_matrix = this.attached();
-         //    var desired = Mat4.inverse(attached_matrix.times(Mat4.translation(0, 25, -25)));
-         //    program_state.set_camera(desired);
-         // }
+        // if (this.attached != undefined && this.attached() == this.initial_camera_location) {
+        //    let desired = this.attached();
+        //    program_state.camera_inverse = desired;
+        // } else if (this.attached != undefined && this.attached() == this.sisyphus) {
+        //    const attached_matrix = this.attached();
+        //    var desired = Mat4.inverse(attached_matrix.times(Mat4.translation(0, 25, -25)));
+        //    program_state.set_camera(desired);
+        // }
         const camera_offset = Mat4.translation(0, 10, 40);
-         if (this.attached !== undefined && this.attached() === this.sisyphus_transform) {
-            const desired_camera_transform = this.sisyphus_transform.times(camera_offset).times(Mat4.inverse(Mat4.translation(0, 0, 0)));
+        if (
+            this.attached !== undefined &&
+            this.attached() === this.sisyphus_transform
+        ) {
+            const desired_camera_transform = this.sisyphus_transform
+                .times(camera_offset)
+                .times(Mat4.inverse(Mat4.translation(0, 0, 0)));
             program_state.set_camera(Mat4.inverse(desired_camera_transform));
-        } else if (this.attached !== undefined && this.attached() === this.initial_camera_location) {
+        } else if (
+            this.attached !== undefined &&
+            this.attached() === this.initial_camera_location
+        ) {
             let desired = this.attached();
             program_state.camera_inverse = desired;
         }
@@ -486,7 +750,9 @@ export class Sisyphus extends Scene {
 
 class Texture_Scroll_Y extends Textured_Phong {
     fragment_glsl_code() {
-        return this.shared_glsl_code() + `
+        return (
+            this.shared_glsl_code() +
+            `
             varying vec2 f_tex_coord;
             uniform sampler2D texture;
             uniform float texture_offset;
@@ -502,14 +768,27 @@ class Texture_Scroll_Y extends Textured_Phong {
                 gl_FragColor = vec4((tex_color.xyz + shape_color.xyz) * ambient, shape_color.w * tex_color.w);
                 // Compute the final color with contributions from lights
                 gl_FragColor.xyz += phong_model_lights(normalize(N), vertex_worldspace);
-            } `;
+            } `
+        );
     }
 
-    update_GPU(context, gpu_addresses, graphics_state, model_transform, material) {
-        super.update_GPU(context, gpu_addresses, graphics_state, model_transform, material);
-        context.uniform1f(gpu_addresses.texture_offset, material.texture_offset);
+    update_GPU(
+        context,
+        gpu_addresses,
+        graphics_state,
+        model_transform,
+        material
+    ) {
+        super.update_GPU(
+            context,
+            gpu_addresses,
+            graphics_state,
+            model_transform,
+            material
+        );
+        context.uniform1f(
+            gpu_addresses.texture_offset,
+            material.texture_offset
+        );
     }
 }
-
-
-
