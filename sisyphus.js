@@ -247,42 +247,83 @@ export class Sisyphus extends Scene {
             
             ramp: new Material(new Texture_Scroll_Y(), {
                 color: hex_color("#A9A9A9"),
-                ambient: 0.5, diffusivity: 0.1, specularity: 0.5,
-                texture: new Texture("assets/ramp_2.png", "LINEAR_MIPMAP_LINEAR")
+                ambient: 0.3, diffusivity: 0.8, specularity: 0.5,
+                texture: new Texture("assets/ramp.png", "LINEAR_MIPMAP_LINEAR"),
+                texture_offset: 0,
             }),
         };
 
-        this.sisyphus_transform = Mat4.identity().times(Mat4.translation(0, -33, -5));
+        this.sisyphus_transform = Mat4.identity()
+            .times(Mat4.translation(0, -33, -5))
+            .times(Mat4.scale(1.3,1.3,1.3));
         this.top = false;
         this.initial_camera_location = Mat4.look_at(
             vec3(0, 10, 4 * 25),
             vec3(0, 0, 0),
             vec3(0, 1, 0)
         );
-        // this.attached = () => null;
+        const base_vector = Vector.of(-10, 0, 0).minus(Vector.of(-10, 0, -40));
+        const side_vector = Vector.of(-10, 0, 0).minus(Vector.of(-10, 25, -40));
+        const dot_product = base_vector.dot(side_vector);
+        const base_mag = base_vector.norm();
+        const side_mag = side_vector.norm();
+        const cosine_angle = dot_product / (base_mag * side_mag);
+        this.ramp_angle = Math.acos(cosine_angle);
+        this.character_y_position = this.sisyphus_transform[1][3];
     }
 
     rotate_left() {
         this.sisyphus_transform = this.sisyphus_transform.times(
-            Mat4.rotation(0.2, 0, 1, 0)
+            Mat4.rotation(0.5, 0, 1, 0)
         );
     }
 
     rotate_right() {
         this.sisyphus_transform = this.sisyphus_transform.times(
-            Mat4.rotation(-0.2, 0, 1, 0)
+            Mat4.rotation(-0.5, 0, 1, 0)
         );
     }
 
     move_left() {
         this.sisyphus_transform = this.sisyphus_transform.times(
-            Mat4.translation(-0.2, 0, 0)
+            Mat4.translation(-0.5, 0, 0)
         );
     }
 
     move_right() {
         this.sisyphus_transform = this.sisyphus_transform.times(
-            Mat4.translation(0.2, 0, 0)
+            Mat4.translation(0.5, 0, 0)
+        );
+    }
+
+    move_up() {
+        let move_y = 0.5;
+        let move_z = -move_y / Math.tan(this.ramp_angle);
+
+        if (this.sisyphus_transform[1][3] > 30) {
+            this.top = true;
+            this.character_y_position = (this.character_y_position + move_y) % 60;
+            return;
+        }
+
+        this.character_y_position = this.character_y_position + move_y;
+        this.sisyphus_transform = this.sisyphus_transform.times(
+            Mat4.translation(0, move_y, move_z)
+        );
+    }
+
+    move_down() {
+        let move_y = -0.5;
+        let move_z = -move_y / Math.tan(this.ramp_angle);
+
+        if (this.sisyphus_transform[1][3] < -30) {
+            this.character_y_position = (this.character_y_position + move_y) % 60;
+            return;
+        }
+
+        this.character_y_position  = this.character_y_position + move_y;
+        this.sisyphus_transform = this.sisyphus_transform.times(
+            Mat4.translation(0, move_y, move_z)
         );
     }
 
@@ -296,7 +337,7 @@ export class Sisyphus extends Scene {
         this.key_triggered_button(
             "Attach to sisyphus",
             ["Control", "1"],
-            () => (this.attached = () => this.sisyphus)
+            () => (this.attached = () => this.sisyphus_transform)
         );
 
         this.key_triggered_button("Left", ["ArrowLeft"], () =>
@@ -313,6 +354,14 @@ export class Sisyphus extends Scene {
 
         this.key_triggered_button("Rotate Right", ["e"], () =>
             this.rotate_right()
+        );
+
+        this.key_triggered_button("Move Up", ["ArrowUp"], () =>
+            this.move_up()
+        );
+
+        this.key_triggered_button("Move Down", ["ArrowDown"], () =>
+            this.move_down()
         );
     }
 
@@ -392,15 +441,7 @@ export class Sisyphus extends Scene {
         const light_position = vec4(sun_x, sun_y, sun_z, 1);
         program_state.lights = [new Light(light_position, sun_color, 100)];
 
-        // mountain and character
-
-        // this.shapes.mountain.draw(
-        //     context,
-        //     program_state,
-        //     this.mountain_transform,
-        //     this.materials.mountain
-        // );
-
+    
         // previous code for sisyphus going up mountain
 
         let model_transform = Mat4.identity();
@@ -410,42 +451,11 @@ export class Sisyphus extends Scene {
         let ramp_transform = model_transform
             .times(Mat4.translation(0,-43,0))
             .times(Mat4.scale(ramp_scale,ramp_scale,ramp_scale));
-        this.shapes.ramp.draw(context, program_state, ramp_transform, this.materials.ramp);
+        const max_height = 30; 
+        const min_height = -30;
+        const texture_offset = (this.character_y_position - min_height) / (max_height - min_height);
+        this.shapes.ramp.draw(context, program_state, ramp_transform, this.materials.ramp.override({texture_offset:texture_offset}));
 
-        // this.shapes.ramp.arrays.texture_coord.forEach(
-        //     (v, i, l) => v[0] = v[0] * 2000000000 // code from discussion slides
-        // )
-        // this.shapes.ramp.arrays.texture_coord.forEach(
-        //     (v, i, l) => v[1] = v[1] * 2000000000  // code from discussion slides
-        // )
-
-        // angle of ramp
-        const base_vector = Vector.of(-10, 0, 0).minus(Vector.of(-10, 0, -40));
-        const side_vector = Vector.of(-10, 0, 0).minus(Vector.of(-10, 25, -40));
-        const dot_product = base_vector.dot(side_vector);
-        const base_mag = base_vector.norm();
-        const side_mag = side_vector.norm();
-        const cosine_angle = dot_product / (base_mag * side_mag);
-        const ramp_angle = Math.acos(cosine_angle);
-
-        // human position
-        let human_y = t/10;
-        let human_z = -human_y / Math.tan(ramp_angle);
-
-        if (!this.top) {
-            this.sisyphus_transform = this.sisyphus_transform
-                .times(Mat4.translation(0,human_y,human_z))
-        } 
-        // this.sisyphus = this.sisyphus_transform;
-
-        if (this.sisyphus_transform[1][3] > 30) {
-            this.top = true;
-        }
-
-        if (this.sisyphus_transform[1][3] <= 30 * -1) {
-            this.top = false;
-        }
-        
         this.shapes.sisyphus.draw(
             context,
             program_state,
@@ -455,14 +465,22 @@ export class Sisyphus extends Scene {
 
         this.sisyphus = this.sisyphus_transform;
 
-         if (this.attached != undefined && this.attached() == this.initial_camera_location) {
+         // if (this.attached != undefined && this.attached() == this.initial_camera_location) {
+         //    let desired = this.attached();
+         //    program_state.camera_inverse = desired;
+         // } else if (this.attached != undefined && this.attached() == this.sisyphus) {
+         //    const attached_matrix = this.attached();
+         //    var desired = Mat4.inverse(attached_matrix.times(Mat4.translation(0, 25, -25)));
+         //    program_state.set_camera(desired);
+         // }
+        const camera_offset = Mat4.translation(0, 10, 40);
+         if (this.attached !== undefined && this.attached() === this.sisyphus_transform) {
+            const desired_camera_transform = this.sisyphus_transform.times(camera_offset).times(Mat4.inverse(Mat4.translation(0, 0, 0)));
+            program_state.set_camera(Mat4.inverse(desired_camera_transform));
+        } else if (this.attached !== undefined && this.attached() === this.initial_camera_location) {
             let desired = this.attached();
             program_state.camera_inverse = desired;
-         } else if (this.attached != undefined && this.attached() == this.sisyphus) {
-            const attached_matrix = this.attached();
-            var desired = Mat4.inverse(attached_matrix.times(Mat4.translation(0, 25, -25)));
-            program_state.set_camera(desired);
-         }
+        }
     }
 }
 
@@ -471,12 +489,11 @@ class Texture_Scroll_Y extends Textured_Phong {
         return this.shared_glsl_code() + `
             varying vec2 f_tex_coord;
             uniform sampler2D texture;
-            uniform float animation_time, animation_delta_time;
-            
-            void main(){
+            uniform float texture_offset;
+
+            void main() {
                 // Create an offset for the texture coordinates
-                float offset = -0.1 * animation_time; // Adjust the speed as necessary
-                vec2 scrolling_tex_coord = vec2(f_tex_coord.x, mod(f_tex_coord.y + offset, 1.0)); // Wrap around using mod
+                vec2 scrolling_tex_coord = vec2(f_tex_coord.x, mod(f_tex_coord.y + texture_offset, 1.0)); // Wrap around using mod
                 vec4 tex_color = texture2D(texture, scrolling_tex_coord);
                 
                 if (tex_color.w < .01) discard; // Discard transparent pixels
@@ -487,4 +504,12 @@ class Texture_Scroll_Y extends Textured_Phong {
                 gl_FragColor.xyz += phong_model_lights(normalize(N), vertex_worldspace);
             } `;
     }
+
+    update_GPU(context, gpu_addresses, graphics_state, model_transform, material) {
+        super.update_GPU(context, gpu_addresses, graphics_state, model_transform, material);
+        context.uniform1f(gpu_addresses.texture_offset, material.texture_offset);
+    }
 }
+
+
+
