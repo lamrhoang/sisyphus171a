@@ -310,7 +310,7 @@ export class Sisyphus extends Scene {
             return;
         }
 
-        this.character_y_position = this.character_y_position + move_y;
+        this.character_y_position = this.character_y_position;
         this.sisyphus_transform = this.sisyphus_transform.times(
             Mat4.translation(0, move_y, move_z)
         );
@@ -320,12 +320,12 @@ export class Sisyphus extends Scene {
         let move_y = -2;
         let move_z = -move_y / Math.tan(this.ramp_angle);
 
-        if (this.sisyphus_transform[1][3] < -30) {
+        if (this.sisyphus_transform[1][3] < -32) {
             this.character_y_position = (this.character_y_position + move_y) % 60;
             return;
         }
 
-        this.character_y_position  = this.character_y_position + move_y;
+        this.character_y_position = this.character_y_position;
         this.sisyphus_transform = this.sisyphus_transform.times(
             Mat4.translation(0, move_y, move_z)
         );
