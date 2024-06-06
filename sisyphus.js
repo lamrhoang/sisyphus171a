@@ -258,7 +258,7 @@ export class Sisyphus extends Scene {
         };
 
         this.sisyphus_transform = Mat4.identity()
-            .times(Mat4.translation(0, -33, -5))
+            .times(Mat4.translation(0, 5, -40))
             .times(Mat4.scale(1.3,1.3,1.3));
         this.top = false;
         this.initial_camera_location = Mat4.look_at(
@@ -297,37 +297,6 @@ export class Sisyphus extends Scene {
     move_right() {
         this.sisyphus_transform = this.sisyphus_transform.times(
             Mat4.translation(2, 0, 0)
-        );
-    }
-
-    move_up() {
-        let move_y = 2;
-        let move_z = -move_y / Math.tan(this.ramp_angle);
-
-        if (this.sisyphus_transform[1][3] > 50) {
-            this.top = true;
-            this.character_y_position = (this.character_y_position + move_y) % 60;
-            return;
-        }
-
-        this.character_y_position = this.character_y_position;
-        this.sisyphus_transform = this.sisyphus_transform.times(
-            Mat4.translation(0, move_y, move_z)
-        );
-    }
-
-    move_down() {
-        let move_y = -2;
-        let move_z = -move_y / Math.tan(this.ramp_angle);
-
-        if (this.sisyphus_transform[1][3] < -32) {
-            this.character_y_position = (this.character_y_position + move_y) % 60;
-            return;
-        }
-
-        this.character_y_position = this.character_y_position;
-        this.sisyphus_transform = this.sisyphus_transform.times(
-            Mat4.translation(0, move_y, move_z)
         );
     }
 
@@ -457,6 +426,9 @@ export class Sisyphus extends Scene {
             .times(Mat4.scale(ramp_scale,ramp_scale,ramp_scale));
         const max_height = 30; 
         const min_height = -30;
+
+        const move_y = 20;
+        this.character_y_position = (this.character_y_position + move_y * dt) % 60;
         const texture_offset = (this.character_y_position - min_height) / (max_height - min_height);
         this.shapes.ramp.draw(context, program_state, ramp_transform, this.materials.ramp.override({texture_offset:texture_offset}));
 
