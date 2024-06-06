@@ -197,9 +197,9 @@ export class Sisyphus extends Scene {
         this.show_collision_boxes = false;
 
         // Initializing ball physics parameters
-        this.ball_velocity = 0;
-        this.ball_acceleration = -0.001; // Example value for acceleration, negative for downwards
-        this.ball_position = 15; // Initial position of the ball along the ramp
+        this.ball_velocity = vec(0, 0);
+        this.ball_acceleration = vec(0, 0); // Example value for acceleration, negative for downwards
+        this.ball_position = vec(0, 15); // Initial position of the ball along the ramp
     }
 
     rotate_left() {
@@ -211,11 +211,11 @@ export class Sisyphus extends Scene {
     }
 
     move_left() {
-        this.sisyphus_transform = this.sisyphus_transform.times(Mat4.translation(-0.5, 0, 0));
+        this.sisyphus_transform = this.sisyphus_transform.times(Mat4.translation(-0.1, 0, 0));
     }
 
     move_right() {
-        this.sisyphus_transform = this.sisyphus_transform.times(Mat4.translation(0.5, 0, 0));
+        this.sisyphus_transform = this.sisyphus_transform.times(Mat4.translation(0.1, 0, 0));
     }
 
     move_up() {
@@ -291,34 +291,59 @@ export class Sisyphus extends Scene {
         return distance < ball_radius;
     }
 
+    // Method to compute the center of a transformed shape
+    getTransformedCenter(matrix, localCenter = vec4(0, 0, 0, 1)) {
+        return matrix.times(localCenter).to3();  // Convert to vec3 after transformation
+    }
+
+    // Method to compute the vector between the centers of a sphere and a cuboid
+    vectorBetweenCenters(sphereMatrix, cuboidMatrix) {
+        const sphereCenter = this.getTransformedCenter(sphereMatrix);
+        const cuboidCenter = this.getTransformedCenter(cuboidMatrix);
+
+        // Calculate the vector from the sphere's center to the cuboid's center
+        return sphereCenter.minus(cuboidCenter);
+    }
+
 
     draw_ball(context, program_state) {
         // Update ball position based on constant acceleration
         let velocity = this.ball_velocity;
-        let acceleration = -0.001;  // Ensure this is negative for rolling down
+        let acceleration = vec(0,-0.05);  // Ensure this is negative for rolling down
 
-        let move_y = this.ball_position - 20;  // Adjusting position to account for the ball's radius
-        let move_z = -this.ball_position / Math.tan(this.ramp_angle);
+        let move_y = this.ball_position[1] - 20;  // Adjusting position to account for the ball's radius
+        let move_z = -this.ball_position[1] / Math.tan(this.ramp_angle);
+        let move_x = this.ball_position[0];
 
-        this.ball_transform = Mat4.identity().times(Mat4.translation(0, move_y, move_z)).times(Mat4.scale(12, 12, 12)); // Update ball transform
+        this.ball_transform = Mat4.identity().times(Mat4.translation(move_x, move_y, move_z)).times(Mat4.scale(12, 12, 12)); // Update ball transform
         let ball_collision_transform = this.ball_transform.times(Mat4.scale(1.1, 1.1, 1.1)); // Slightly larger
 
         // Check for collision
         if (this.check_collision(this.sisyphus_transform.times(Mat4.scale(1.2, 2.4, 0.6)), ball_collision_transform))
         {
             console.log("Collision detected");
-            acceleration = 0.00001
-            velocity = 0.1
+            // to be changed
+            acceleration = vec(0, 0);
+            let temp_v = this.vectorBetweenCenters(ball_collision_transform, this.sisyphus_transform.times(Mat4.scale(1.2, 2.4, 0.6)));
+            console.log(temp_v);
+            let xv = temp_v[0];
+            let tv = vec(temp_v[1], temp_v[2]);
+            let parallel = vec(Math.sin(this.ramp_angle), Math.cos(this.ramp_angle));
+            let cv = tv.dot(parallel);
+            let v = vec(xv, cv);
+            velocity = v.times(0.1/v.norm());
+            console.log(velocity);
         }
-        this.ball_velocity = this.ball_velocity + this.ball_acceleration
-        velocity += acceleration
-        this.ball_acceleration = acceleration
-        this.ball_velocity = velocity
-        this.ball_position = this.ball_position + velocity;
-        move_y = this.ball_position - 20;  // Adjusting position to account for the ball's radius
-        move_z = -this.ball_position / Math.tan(this.ramp_angle);
+        this.ball_velocity = this.ball_velocity.plus(this.ball_acceleration);
+        velocity = velocity.plus(acceleration);
+        this.ball_acceleration = acceleration;
+        this.ball_velocity = velocity;
+        this.ball_position = this.ball_position.plus(velocity);
+        move_x = this.ball_position[0];
+        move_y = this.ball_position[1] - 20;  // Adjusting position to account for the ball's radius
+        move_z = -this.ball_position[1] / Math.tan(this.ramp_angle);
 
-        this.ball_transform = Mat4.identity().times(Mat4.translation(0, move_y, move_z)).times(Mat4.scale(12, 12, 12)); // Update ball transform
+        this.ball_transform = Mat4.identity().times(Mat4.translation(move_x, move_y, move_z)).times(Mat4.scale(12, 12, 12)); // Update ball transform
         ball_collision_transform = this.ball_transform.times(Mat4.scale(1.1, 1.1, 1.1)); // Slightly larger
 
         this.shapes.ball.draw(context, program_state, this.ball_transform, this.materials.ball);
