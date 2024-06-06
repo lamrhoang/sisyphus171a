@@ -25,6 +25,7 @@ const {
     Subdivision_Sphere,
     Capped_Cylinder,
     Phong_Shader,
+    Fake_Bump_Map,
 } = defs;
 
 class Ramp extends Shape {
@@ -200,11 +201,16 @@ export class Sisyphus extends Scene {
                 specularity: 1,
                 color: hex_color("#FFFFFF"),
             }),
-            ball: new Material(new Phong_Shader(), {
+            ball: new Material(new defs.Fake_Bump_Map(), {
                 ambient: 0.5,
                 diffusivity: 0.5,
                 specularity: 1,
                 color: hex_color("#654321"),
+                texture: new Texture(
+                    "assets/ramp_final.png",
+                    "LINEAR_MIPMAP_LINEAR"
+                ),
+                texture_offset: 0,
             }),
             ball_collision: new Material(new Phong_Shader(), {
                 ambient: 0.2,
@@ -257,8 +263,13 @@ export class Sisyphus extends Scene {
                     "assets/ramp_final.png",
                     "LINEAR_MIPMAP_LINEAR"
                 ),
-                texture_offset: 0,
             }),
+            // ramp: new Material(new defs.Fake_Bump_Map(), {
+            //     color: hex_color("#A9A9A9"),
+            //     ambient: 0.3, diffusivity: 0.8, specularity: 1,
+            //     texture: new Texture("assets/ramp_2.png", "LINEAR_MIPMAP_LINEAR"),
+            //     texture_offset: 0,
+            // }),
             ground: new Material(new Textured_Phong(), {
                 color: hex_color("#7CFC00"),
                 ambient: 0.3,
@@ -694,7 +705,7 @@ export class Sisyphus extends Scene {
         );
 
         const light_position = vec4(sun_x, sun_y, sun_z, 1);
-        program_state.lights = [new Light(light_position, sun_color, 100)];
+        program_state.lights = [new Light(light_position, sun_color, 1000)];
 
         this.draw_ground(context, program_state);
         this.draw_ramp(context, program_state);
