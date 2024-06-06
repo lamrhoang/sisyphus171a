@@ -190,6 +190,7 @@ export class Sisyphus extends Scene {
             moon: new Subdivision_Sphere(4),
             sisyphus: new Person(),
             ramp: new Ramp(),
+            ground: new Cube(),
         };
 
         this.materials = {
@@ -257,6 +258,13 @@ export class Sisyphus extends Scene {
                     "LINEAR_MIPMAP_LINEAR"
                 ),
                 texture_offset: 0,
+            }),
+            ground: new Material(new Textured_Phong(), {
+                color: hex_color("#7CFC00"),
+                ambient: 0.3,
+                diffusivity: 0.8,
+                specularity: 0.5,
+                // texture: new Texture("assets/rock.png", "NEAREST"),
             }),
         };
 
@@ -446,6 +454,21 @@ export class Sisyphus extends Scene {
 
         // Calculate the vector from the sphere's center to the cuboid's center
         return sphereCenter.minus(cuboidCenter);
+    }
+
+    draw_ground(context, program_state) {
+        let ground_transform = Mat4.identity();
+
+        ground_transform = ground_transform
+            .times(Mat4.translation(0, -43, 0))
+            .times(Mat4.scale(1080, 0.1, 1080));
+
+        this.shapes.ground.draw(
+            context,
+            program_state,
+            ground_transform,
+            this.materials.ground
+        );
     }
 
     draw_ball(context, program_state) {
@@ -673,6 +696,7 @@ export class Sisyphus extends Scene {
         const light_position = vec4(sun_x, sun_y, sun_z, 1);
         program_state.lights = [new Light(light_position, sun_color, 100)];
 
+        this.draw_ground(context, program_state);
         this.draw_ramp(context, program_state);
         this.draw_player(context, program_state);
         this.draw_ball(context, program_state);
