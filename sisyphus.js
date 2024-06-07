@@ -192,6 +192,7 @@ export class Sisyphus extends Scene {
             sisyphus: new Person(),
             ramp: new Ramp(),
             ground: new Cube(),
+            spike: new Cube(),
         };
 
         this.materials = {
@@ -254,7 +255,7 @@ export class Sisyphus extends Scene {
                 specularity: 1,
                 color: hex_color("#394854"),
             }),
-            ramp: new Material(new Texture_Scroll_Y(), {
+            ramp: new Material(new Fake_Bump_Map(), {
                 color: hex_color("#A9A9A9"),
                 ambient: 0.3,
                 diffusivity: 0.8,
@@ -276,6 +277,15 @@ export class Sisyphus extends Scene {
                 diffusivity: 0.8,
                 specularity: 0.5,
                 // texture: new Texture("assets/rock.png", "NEAREST"),
+            }),
+            spike: new Material(new Phong_Shader(), {
+                ambient: 0.5,
+                diffusivity: 0.5,
+                specularity: 1,
+                texture: new Texture(
+                    "assets/ramp_final.png",
+                    "LINEAR_MIPMAP_LINEAR"
+                ),
             }),
         };
 
@@ -305,6 +315,39 @@ export class Sisyphus extends Scene {
 
         this.show_collision_boxes = false;
 
+        this.ramps = [];
+        this.spikes = [];
+        // for first ramp, there are no spikes
+        // test spike transform
+
+        this.current_ramp = 0;
+
+        let model_transform = Mat4.identity();
+        this.ramp_scale = 4;
+        this.ramp_scalex = this.ramp_scale * 2;
+
+        let ramp_transform = Mat4.identity();
+        ramp_transform = ramp_transform
+            .times(Mat4.translation(0, -43, 0))
+            .times(
+                Mat4.scale(this.ramp_scalex, this.ramp_scale, this.ramp_scale)
+            );
+
+        let spike_transform = ramp_transform
+            .times(
+                Mat4.scale(
+                    1 / this.ramp_scalex,
+                    1 / this.ramp_scale,
+                    1 / this.ramp_scale
+                )
+            )
+            .times(Mat4.translation(-10, 40, -40))
+            .times(Mat4.scale(5, 10, 5));
+
+        this.spikes.push([spike_transform]);
+
+        this.ramps.push(ramp_transform);
+
         // Initializing ball physics parameters
         this.ball_velocity = vec(0, 0);
         this.ball_acceleration = vec(0, 0); // Example value for acceleration, negative for downwards
@@ -325,47 +368,105 @@ export class Sisyphus extends Scene {
 
     move_left() {
         this.sisyphus_transform = this.sisyphus_transform.times(
-            Mat4.translation(-0.1, 0, 0)
+            Mat4.translation(-0.2, 0, 0)
         );
     }
 
     move_right() {
         this.sisyphus_transform = this.sisyphus_transform.times(
-            Mat4.translation(0.1, 0, 0)
+            Mat4.translation(0.2, 0, 0)
         );
     }
 
     move_up() {
-        let move_y = 0.1;
+        let move_y = 1;
         let move_z = -move_y / Math.tan(this.ramp_angle);
 
-        // if (this.sisyphus_transform[1][3] > 50) {
-        //     this.top = true;
-        //     this.character_y_position =
-        //         (this.character_y_position + move_y) % 60;
-        //     return;
-        // }
-
-        this.character_y_position = this.character_y_position + move_y;
         this.sisyphus_transform = this.sisyphus_transform.times(
             Mat4.translation(0, move_y, move_z)
         );
+        this.character_y_position = this.sisyphus_transform[1][3];
+
+        this.update_ramps();
+        this.current_ramp = Math.floor((this.character_y_position + 43) / 160);
+    }
+
+    update_ramps() {
+        let num_ramps = Math.ceil((this.character_y_position + 43) / 160) + 2;
+
+        if (this.ramps.length < num_ramps) {
+            let last_ramp_transform = this.ramps[this.ramps.length - 1];
+            last_ramp_transform = last_ramp_transform.times(
+                Mat4.scale(
+                    1 / this.ramp_scalex,
+                    1 / this.ramp_scale,
+                    1 / this.ramp_scale
+                )
+            );
+            let ramp_transform = last_ramp_transform;
+            ramp_transform = ramp_transform
+                .times(
+                    Mat4.translation(
+                        0,
+                        this.ramp_scale * 40,
+                        this.ramp_scale * -40
+                    )
+                )
+                .times(
+                    Mat4.scale(
+                        this.ramp_scalex,
+                        this.ramp_scale,
+                        this.ramp_scale
+                    )
+                );
+            this.ramps.push(ramp_transform);
+            this.update_spikes();
+        }
+    }
+
+    update_spikes() {
+        let ramp_transform = this.ramps[this.ramps.length - 1];
+        ramp_transform = ramp_transform.times(
+            Mat4.scale(
+                1 / this.ramp_scalex,
+                1 / this.ramp_scale,
+                1 / this.ramp_scale
+            )
+        );
+        console.log(ramp_transform);
+        let num_spikes = Math.floor(Math.random() * 10) + 1;
+        // Math.floor(Math.random() * (this.character_y_position / 80)) + 1;
+        let current_spikes = [];
+        for (let i = 0; i < num_spikes; i++) {
+            let random_offsetx = Math.floor(Math.random() * 240 - 120) + 1;
+
+            let random_offsetyz = Math.floor(Math.random() * 160) + 1;
+
+            let spike_transform = ramp_transform
+                .times(
+                    Mat4.translation(
+                        random_offsetx,
+                        random_offsetyz,
+                        random_offsetyz * -1
+                    )
+                )
+                .times(Mat4.scale(5, 10, 5));
+
+            current_spikes.push(spike_transform);
+        }
+        this.spikes.push(current_spikes);
+        console.log(this.ramps.length, this.spikes.length);
     }
 
     move_down() {
         let move_y = -2;
         let move_z = -move_y / Math.tan(this.ramp_angle);
 
-        if (this.sisyphus_transform[1][3] < -30) {
-            this.character_y_position =
-                (this.character_y_position + move_y) % 60;
-            return;
-        }
-
-        this.character_y_position = this.character_y_position + move_y;
         this.sisyphus_transform = this.sisyphus_transform.times(
             Mat4.translation(0, move_y, move_z)
         );
+        this.character_y_position = this.sisyphus_transform[1][3];
+        this.current_ramp = Math.floor((this.character_y_position + 43) / 160);
     }
 
     make_control_panel() {
@@ -491,6 +592,9 @@ export class Sisyphus extends Scene {
         let move_z = -this.ball_position[1] / Math.tan(this.ramp_angle);
         let move_x = this.ball_position[0];
 
+        let t = program_state.animation_time / 1000,
+            dt = program_state.animation_delta_time / 1000;
+
         this.ball_transform = Mat4.identity()
             .times(Mat4.translation(move_x, move_y, move_z))
             .times(Mat4.scale(12, 12, 12)); // Update ball transform
@@ -505,14 +609,14 @@ export class Sisyphus extends Scene {
                 ball_collision_transform
             )
         ) {
-            console.log("Collision detected");
+            // console.log("Collision detected");
             // to be changed
             acceleration = vec(0, 0);
             let temp_v = this.vectorBetweenCenters(
                 ball_collision_transform,
                 this.sisyphus_transform.times(Mat4.scale(1.2, 2.4, 0.6))
             );
-            console.log(temp_v);
+            // console.log(temp_v);
             let xv = temp_v[0];
             let tv = vec(temp_v[1], temp_v[2]);
             let parallel = vec(
@@ -522,13 +626,90 @@ export class Sisyphus extends Scene {
             let cv = tv.dot(parallel);
             let v = vec(xv, cv);
             velocity = v.times(0.1 / v.norm());
-            console.log(velocity);
+
+            // console.log(velocity);
         }
+
+        if (
+            this.check_collision(
+                Mat4.translation(
+                    ball_collision_transform[0][3],
+                    -43,
+                    ball_collision_transform[2][3]
+                ),
+                ball_collision_transform
+            )
+        ) {
+            // console.log("Collision detected");
+            // to be changed
+            acceleration = vec(0, 0);
+            let temp_v = this.vectorBetweenCenters(
+                ball_collision_transform,
+                Mat4.translation(
+                    ball_collision_transform[0][3],
+                    -43,
+                    ball_collision_transform[2][3]
+                )
+            );
+            // console.log(temp_v);
+            let xv = temp_v[0];
+            let tv = vec(temp_v[1], temp_v[2]);
+            let parallel = vec(
+                Math.sin(this.ramp_angle),
+                Math.cos(this.ramp_angle)
+            );
+            let cv = tv.dot(parallel);
+            let v = vec(xv, cv);
+            velocity = v.times(0.1 / v.norm());
+            // console.log(velocity);
+        }
+
         this.ball_velocity = this.ball_velocity.plus(this.ball_acceleration);
         velocity = velocity.plus(acceleration);
+
         this.ball_acceleration = acceleration;
         this.ball_velocity = velocity;
         this.ball_position = this.ball_position.plus(velocity);
+
+        for (let i = 0; i < this.spikes[this.current_ramp].length; i++) {
+            let current_spike_transform = this.spikes[this.current_ramp][i];
+            // console.log(current_spike_transform);
+            if (
+                this.check_collision(
+                    current_spike_transform,
+                    ball_collision_transform
+                )
+            ) {
+                // console.log("Collision detected");
+                // to be changed
+                acceleration = vec(0, 0);
+                let temp_v = this.vectorBetweenCenters(
+                    ball_collision_transform,
+                    current_spike_transform
+                );
+                // console.log(temp_v);
+                let xv = temp_v[0];
+                let tv = vec(temp_v[1], temp_v[2]);
+                let parallel = vec(
+                    Math.sin(this.ramp_angle),
+                    Math.cos(this.ramp_angle)
+                );
+                let cv = tv.dot(parallel);
+                let v = vec(xv, cv);
+                velocity = v.times(0.1 / v.norm());
+                // console.log(velocity);
+
+                this.ball_velocity = this.ball_velocity.plus(
+                    this.ball_acceleration
+                );
+                velocity = velocity.plus(acceleration);
+
+                this.ball_acceleration = acceleration;
+                this.ball_velocity = velocity;
+                this.ball_position = this.ball_position.plus(velocity);
+            }
+        }
+
         move_x = this.ball_position[0];
         move_y = this.ball_position[1] - 20; // Adjusting position to account for the ball's radius
         move_z = -this.ball_position[1] / Math.tan(this.ramp_angle);
@@ -536,6 +717,13 @@ export class Sisyphus extends Scene {
         this.ball_transform = Mat4.identity()
             .times(Mat4.translation(move_x, move_y, move_z))
             .times(Mat4.scale(12, 12, 12)); // Update ball transform
+
+        if (this.ball_transform[1][3] > -31) {
+            this.ball_transform = this.ball_transform.times(
+                Mat4.rotation(-t, 1, 0, 0)
+            );
+        }
+
         ball_collision_transform = this.ball_transform.times(
             Mat4.scale(1.1, 1.1, 1.1)
         ); // Slightly larger
@@ -580,28 +768,8 @@ export class Sisyphus extends Scene {
     }
 
     draw_ramp(context, program_state) {
-        let model_transform = Mat4.identity();
-        let ramp_scale = 4;
-        let ramp_scalex = ramp_scale * 2;
-        // ramp drawing
-        let num_ramps =
-            (this.character_y_position + 33) / (ramp_scale * 10) + 2;
-
-        let ramp_transform = Mat4.identity();
-
-        for (let i = 0; i < num_ramps; i++) {
-            if (i == 0) {
-                ramp_transform = ramp_transform
-                    .times(Mat4.translation(0, -43, 0))
-                    .times(Mat4.scale(ramp_scalex, ramp_scale, ramp_scale));
-            } else {
-                ramp_transform = ramp_transform
-                    .times(
-                        Mat4.translation(0, ramp_scale * 40, ramp_scale * -40)
-                    )
-                    .times(Mat4.scale(ramp_scalex, ramp_scale, ramp_scale));
-            }
-
+        for (let i = 0; i < this.ramps.length; i++) {
+            let ramp_transform = this.ramps[i];
             const max_height = 30;
             const min_height = -30;
             const texture_offset =
@@ -613,21 +781,9 @@ export class Sisyphus extends Scene {
                 ramp_transform,
                 this.materials.ramp.override({ texture_offset: texture_offset })
             );
-            ramp_transform = ramp_transform.times(
-                Mat4.scale(1 / ramp_scalex, 1 / ramp_scale, 1 / ramp_scale)
-            );
+
+            this.draw_spikes(context, program_state, i);
         }
-        // const max_height = 30;
-        // const min_height = -30;
-        // const texture_offset =
-        //     (this.character_y_position - min_height) /
-        //     (max_height - min_height);
-        // this.shapes.ramp.draw(
-        //     context,
-        //     program_state,
-        //     this.ramp_transform,
-        //     this.materials.ramp.override({ texture_offset: texture_offset })
-        // );
 
         // if (this.show_collision_boxes) {
         //     let ramp_collision_transform = this.ramp_transform
@@ -641,6 +797,17 @@ export class Sisyphus extends Scene {
         //         "LINES"
         //     );
         // }
+    }
+    draw_spikes(context, program_state, ramp_index) {
+        for (let i = 0; i < this.spikes[ramp_index].length; i++) {
+            let spike_transform = this.spikes[ramp_index][i];
+            this.shapes.spike.draw(
+                context,
+                program_state,
+                spike_transform,
+                this.materials.spike
+            );
+        }
     }
 
     display(context, program_state) {
@@ -707,12 +874,12 @@ export class Sisyphus extends Scene {
         const light_position = vec4(sun_x, sun_y, sun_z, 1);
         program_state.lights = [new Light(light_position, sun_color, 1000)];
 
-        this.draw_ground(context, program_state);
+        // this.draw_ground(context, program_state);
         this.draw_ramp(context, program_state);
         this.draw_player(context, program_state);
         this.draw_ball(context, program_state);
 
-        const camera_offset = Mat4.translation(0, 10, 40);
+        const camera_offset = Mat4.translation(0, 10, 80);
         if (
             this.attached !== undefined &&
             this.attached() === this.sisyphus_transform
