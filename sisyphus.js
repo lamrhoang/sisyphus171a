@@ -278,7 +278,7 @@ export class Sisyphus extends Scene {
                 specularity: 0.5,
                 // texture: new Texture("assets/rock.png", "NEAREST"),
             }),
-            spike: new Material(new Phong_Shader(), {
+            spike: new Material(new Textured_Phong(), {
                 ambient: 0.5,
                 diffusivity: 0.5,
                 specularity: 1,
@@ -333,6 +333,7 @@ export class Sisyphus extends Scene {
                 Mat4.scale(this.ramp_scalex, this.ramp_scale, this.ramp_scale)
             );
 
+        let spikex = Math.floor(Math.random() * 20 - 10) + 1;
         let spike_transform = ramp_transform
             .times(
                 Mat4.scale(
@@ -341,7 +342,7 @@ export class Sisyphus extends Scene {
                     1 / this.ramp_scale
                 )
             )
-            .times(Mat4.translation(-10, 40, -40))
+            .times(Mat4.translation(spikex, 40, -40))
             .times(Mat4.scale(5, 10, 5));
 
         this.spikes.push([spike_transform]);
@@ -437,7 +438,7 @@ export class Sisyphus extends Scene {
             )
         );
 
-        let num_spikes = Math.floor(Math.random() * 10) + 1;
+        let num_spikes = Math.floor(Math.random() * 5) + 5;
         // Math.floor(Math.random() * (this.character_y_position / 80)) + 1;
         let current_spikes = [];
         for (let i = 0; i < num_spikes; i++) {
@@ -472,13 +473,17 @@ export class Sisyphus extends Scene {
     }
 
     restart() {
+        this.initial_camera_location = Mat4.look_at(
+            vec3(0, 10, 4 * 25),
+            vec3(0, 0, 0),
+            vec3(0, 1, 0)
+        );
         this.scores.push(this.score);
         this.scores = this.scores.sort(function (a, b) {
             return a - b;
         });
         this.scores = this.scores.reverse();
 
-        // this.new_line();
         this.score = 0;
         this.sisyphus_transform = Mat4.identity()
             .times(Mat4.translation(0, -33, -5))
