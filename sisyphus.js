@@ -1015,7 +1015,7 @@ export class Sisyphus extends Scene {
         const t = program_state.animation_time / 1000,
             dt = program_state.animation_delta_time / 1000;
 
-        const arc_radius = 250;
+        const arc_radius = 100;
         const max_angle = (Math.PI * 2) / 7;
         const sway_period = 8;
 
